@@ -8,9 +8,10 @@ export default function Header({}) {
     <View style={styles.header}>
       <TouchableOpacity
         onPress={() => navigation.navigate("Sidebar")}
-        style={styles.sidebarButton} // 사이드바 버튼 누르면 페이지 이동
+        // 사이드바 버튼 누르면 페이지 이동
       >
-        <Text style={styles.menu}>☰</Text> {/* 아이콘 바꾸어야 함 */}
+        <Text style={[styles.menu, styles.sidebarButton]}>☰</Text>{" "}
+        {/* 아이콘 바꾸어야 함 */}
       </TouchableOpacity>
       <Text style={styles.title}>Trabuddy</Text>
     </View>
@@ -19,8 +20,8 @@ export default function Header({}) {
 
 const styles = StyleSheet.create({
   header: {
-    height: 60,
     backgroundColor: "#eee",
+    height: 50,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
