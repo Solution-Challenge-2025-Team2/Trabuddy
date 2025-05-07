@@ -23,6 +23,8 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": ["expo-font"],
+    "assets": ["./assets/fonts/OriginalSurfer/", "./assets/fonts/Outfit/"]
   }
 }

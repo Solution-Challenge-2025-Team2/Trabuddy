@@ -19,8 +19,8 @@ export default function Frame({
         style: styles.container,
       };
   return (
-    <Wrapper {...wrapperProps}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
+      <Wrapper {...wrapperProps}>
         <View>
           <Header AppName={AppName} />
         </View>
@@ -35,14 +35,15 @@ export default function Frame({
             <Footer />
           </View>
         )}
-      </SafeAreaView>
-    </Wrapper>
+      </Wrapper>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "white",
     resizeMode: "cover",
   },
   safeArea: {
