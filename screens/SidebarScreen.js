@@ -1,16 +1,32 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import Frame from "../Frame";
 
 const Sidebar = ({ navigation }) => {
   return (
-    <View style={styles.container}>
+    <Frame AppName="" disableBackground={true}>
       <TouchableOpacity onPress={() => navigation.navigate("Main")}>
         <Text style={styles.link}>Chat</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate("Problems")}>
-        <Text style={styles.link}>Problems</Text>
+      <TouchableOpacity onPress={() => navigation.navigate("History/Culture")}>
+        <Text style={styles.link}>History/Culture</Text>
       </TouchableOpacity>
-    </View>
+      <TouchableOpacity onPress={() => navigation.navigate("PrepareTravels")}>
+        <Text style={styles.link}>Prepare Travels</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate("Emergency")}>
+        <Text style={styles.link}>Emergency</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate("MyPage")}>
+        <Text style={styles.link}>My Page</Text>
+      </TouchableOpacity>
+    </Frame>
   );
 };
 
@@ -21,15 +37,10 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: "center",
   },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
   link: {
     fontSize: 18,
     marginVertical: 10,
-    color: "blue",
+    color: "black",
   },
 });
 
