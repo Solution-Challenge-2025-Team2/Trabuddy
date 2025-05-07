@@ -24,8 +24,8 @@ const Sidebar = ({ navigation }) => {
           style={styles.link}
         />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate("History/Culture")}>
-        <Text style={styles.link}>History/Culture</Text>
+      <TouchableOpacity onPress={() => navigation.navigate("PersonalContent")}>
+        <Text style={styles.link}>PersonalContent</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate("PrepareTravels")}>
         <Text style={styles.link}>Prepare Travels</Text>

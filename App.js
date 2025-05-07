@@ -8,7 +8,7 @@ import {
 import { Outfit_400Regular } from "@expo-google-fonts/outfit";
 import Main from "./screens/MainScreen"; // main page
 import Emergency from "./screens/EmergencyScreen"; // emergency page
-import HistoryCulture from "./screens/HistoryCultureScreen"; // history/culture page
+import PersonalContent from "./screens/PersonalContentScreen"; //personal content page
 import Prepare from "./screens/PrepareScreen"; // prepare page
 import MyPage from "./screens/MyPageScreen"; // my page
 import Sidebar from "./screens/SidebarScreen"; // Sidebar (header, footer 제외)
@@ -30,7 +30,7 @@ export default function App() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Main" component={Main} />
         <Stack.Screen name="Emergency" component={Emergency} />
-        <Stack.Screen name="History/Culture" component={HistoryCulture} />
+        <Stack.Screen name="PersonalContent" component={PersonalContent} />
         <Stack.Screen name="PrepareTravels" component={Prepare} />
         <Stack.Screen name="MyPage" component={MyPage} />
         {/* Add other screens here */}
