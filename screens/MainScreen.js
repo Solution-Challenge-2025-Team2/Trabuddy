@@ -4,7 +4,9 @@ import { Text } from "react-native";
 export default function MainScreen() {
   return (
     <Frame>
-      <Text>Welcome to the Main Page!</Text>
+      <Text style={(fontFamily = "OriginalSurfer")}>
+        Welcome to the Main Page!
+      </Text>
     </Frame>
   );
 }
