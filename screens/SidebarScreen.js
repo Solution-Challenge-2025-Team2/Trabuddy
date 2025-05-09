@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -6,15 +6,78 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Alert,
+  Keyboard,
 } from "react-native";
 import Frame from "../Frame";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useChat } from "../context/ChatContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Sidebar = ({ navigation }) => {
-  // 로그인 상태 관리 (나중에 실제 로그인 로직으로 변경)
+  // 로그인 상태 관리
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { resetChat } = useChat();
+
+  // 컴포넌트 마운트 시 토큰 확인
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
+
+  // 로그인 상태 확인 함수
+  const checkLoginStatus = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      setIsLoggedIn(!!token); // 토큰이 있으면 로그인 상태로 설정
+    } catch (error) {
+      console.error('토큰 확인 오류:', error);
+    }
+  };
+
+  // 로그아웃 함수
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('access_token');
+      setIsLoggedIn(false);
+      Alert.alert('알림', '로그아웃되었습니다.');
+    } catch (error) {
+      console.error('로그아웃 오류:', error);
+      Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
+    }
+  };
+
+  // 페이지 이동 시 키보드 내리는 함수
+  const navigateAndDismissKeyboard = (screenName) => {
+    Keyboard.dismiss(); // 키보드 내리기
+
+    // 키보드가 내려간 후 네비게이션 실행
+    setTimeout(() => {
+      navigation.navigate(screenName);
+    }, 50); // 50ms 지연
+  };
+
+  // 단순 네비게이션 함수 (채팅 초기화 없음)
+  const handleNavigateToMain = () => {
+    Keyboard.dismiss(); // 키보드 내리기
+
+    // 키보드가 내려간 후 네비게이션 실행
+    setTimeout(() => {
+      navigation.navigate("Main");
+    }, 50); // 50ms 지연
+  };
+
+  // 채팅 초기화 후 네비게이션 함수
+  const handleResetChatAndNavigate = () => {
+    Keyboard.dismiss(); // 키보드 내리기
+    resetChat();
+
+    // 키보드가 내려간 후 네비게이션 실행
+    setTimeout(() => {
+      navigation.navigate("Main");
+    }, 50); // 50ms 지연
+  };
 
   // 로그인 후 상단에 표시할 사용자 정보 컴포넌트
   const renderUserInfo = () => {
@@ -23,12 +86,15 @@ const Sidebar = ({ navigation }) => {
     return (
       <View style={styles.userInfoContainer}>
         <View style={styles.profileImagePlaceholder}>
-          <Ionicons name="person" size={40} color="#40ABE5" />
+          <Image
+            source={require('../assets/figma_images/trabuddy_face.png')}
+            style={styles.profileImage}
+          />
         </View>
-        <Text style={styles.userName}>User Name</Text>
+        <Text style={styles.userName}>로그인됨</Text>
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={() => setIsLoggedIn(false)}
+          onPress={handleLogout}
         >
           <Text style={styles.logoutText}>Log out</Text>
         </TouchableOpacity>
@@ -64,53 +130,62 @@ const Sidebar = ({ navigation }) => {
 
       {/* 메뉴 아이템 */}
       <View style={styles.menuContainer}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Main")}
-          style={styles.chatMenuItem}
-        >
-          <Text style={styles.link}>Chat</Text>
-          <MaterialCommunityIcons
-            name="chat-plus-outline"
-            size={40}
-            color="black"
-            style={styles.icon}
-          />
-        </TouchableOpacity>
+        <View style={styles.chatMenuItem}>
+          <TouchableOpacity
+            onPress={handleNavigateToMain}
+            style={styles.chatMenuTextWrapper}
+          >
+            <Text style={styles.link}>Chat</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleResetChatAndNavigate}
+            style={styles.chatIconWrapper}
+          >
+            <MaterialCommunityIcons
+              name="chat-plus-outline"
+              size={40}
+              color="black"
+              style={styles.icon}
+            />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("HistoryCulture")}
+          onPress={() => navigateAndDismissKeyboard("HistoryCulture")}
           style={styles.menuItem}
         >
           <Text style={styles.link}>History/Culture</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("PersonalContent")}
+          onPress={() => navigateAndDismissKeyboard("PersonalContent")}
           style={styles.menuItem}
         >
           <Text style={styles.link}>PersonalContent</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("PrepareTravels")}
+          onPress={() => navigateAndDismissKeyboard("PrepareTravels")}
           style={styles.menuItem}
         >
           <Text style={styles.link}>Prepare Travels</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate("Emergency")}
+          onPress={() => navigateAndDismissKeyboard("Emergency")}
           style={styles.menuItem}
         >
           <Text style={styles.link}>Emergency</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate("MyPage")}
-          style={styles.menuItem}
-        >
-          <Text style={styles.link}>My Page</Text>
-        </TouchableOpacity>
+        {isLoggedIn && (
+          <TouchableOpacity
+            onPress={() => navigateAndDismissKeyboard("PreviousChat")}
+            style={styles.menuItem}
+          >
+            <Text style={styles.link}>Previous Chat</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 로그인 버튼 (화면 아래쪽에 배치) */}
@@ -138,10 +213,16 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#EEF7FB",
+    backgroundColor: "#40ABE5",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   userName: {
     fontFamily: "OriginalSurfer",
@@ -193,6 +274,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingRight: 30,
     marginBottom: 15,
+  },
+  chatMenuTextWrapper: {
+    paddingVertical: 10,
+  },
+  chatIconWrapper: {
+    padding: 5,
   },
   menuItem: {
     paddingVertical: 10,
