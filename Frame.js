@@ -1,8 +1,9 @@
-import { View, StyleSheet, ImageBackground, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, StyleSheet, ImageBackground, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
+import { useEffect, useState } from "react";
 
 // header와 footer를 포함한 모바일 틀
 export default function Frame({
@@ -11,6 +12,25 @@ export default function Frame({
   disableBackground = false,
 }) {
   const route = useRoute();
+  const [keyboardDuration, setKeyboardDuration] = useState(250); // 기본 키보드 애니메이션 시간
+
+  // 키보드 애니메이션 속도 감지
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        // 키보드 애니메이션 시간 설정 (iOS만 제공)
+        if (Platform.OS === 'ios' && e.duration) {
+          setKeyboardDuration(e.duration);
+        }
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+    };
+  }, []);
+
   const Wrapper = disableBackground ? View : ImageBackground;
   const wrapperProps = disableBackground
     ? { style: styles.container }
@@ -29,6 +49,15 @@ export default function Frame({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+          contentContainerStyle={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          enableAutomaticScroll={true}
+          // 키보드 애니메이션 속도와 동기화
+          enableOnAndroid={true}
+          // iOS에서 애니메이션 속도 동기화
+          iosTransitionConfig={{
+            timing: { duration: keyboardDuration }
+          }}
         >
           <ScrollView contentContainerStyle={styles.content}>
             {children}

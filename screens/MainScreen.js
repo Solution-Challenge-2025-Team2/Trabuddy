@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,84 +8,16 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import Frame from "../Frame";
-
-// 샘플 메시지 데이터
-const initialMessages = [];
+import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 사용
 
 export default function MainScreen() {
   const navigation = useNavigation();
-  const [messages, setMessages] = useState(initialMessages);
-  const [inputValue, setInputValue] = useState('');
-  const [showChatInterface, setShowChatInterface] = useState(false);
+  const { messages, isChatActive } = useChat(); // 컨텍스트에서 메시지와 채팅 상태 가져오기
   const scrollViewRef = useRef(null);
-
-  // Footer 컴포넌트로부터 메시지를 받는 함수
-  useEffect(() => {
-    // 전역 이벤트 리스너를 설정할 수 있음
-    // 여기서는 예시로 구현하지 않음
-  }, []);
-
-  // 가상의 API 응답을 시뮬레이션하는 함수
-  const getAIResponse = async (userMessage) => {
-    // 실제 구현에서는, 여기서 API를 호출합니다
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          text: `당신의 메시지 "${userMessage}"에 대한 응답입니다. 어떻게 도와드릴까요?`,
-          timestamp: new Date().toISOString()
-        });
-      }, 1000);
-    });
-  };
-
-  // 새 메시지를 추가하는 함수
-  const addMessage = async (text, isUser = true) => {
-    const newMessage = {
-      id: Date.now().toString(),
-      text,
-      isUser,
-      timestamp: new Date().toISOString()
-    };
-
-    // 메시지 목록에 새 메시지 추가
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-
-    // 채팅 인터페이스로 전환
-    setShowChatInterface(true);
-
-    // 사용자 메시지에 대한 AI 응답 처리
-    if (isUser) {
-      const response = await getAIResponse(text);
-      const aiMessage = {
-        id: Date.now().toString() + '-ai',
-        text: response.text,
-        isUser: false,
-        timestamp: response.timestamp
-      };
-      setMessages(prevMessages => [...prevMessages, aiMessage]);
-    }
-
-    // 스크롤 뷰를 맨 아래로 스크롤
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-
-  // Footer에서 메시지를 보낼 때 호출될 함수
-  const handleSendMessage = (text) => {
-    if (text.trim()) {
-      addMessage(text);
-      setInputValue('');
-    }
-  };
-
-  // 전역에서 Footer의 메시지 입력을 처리할 함수
-  // 이 함수는 어느 화면에서든 프롬프트에 입력한 메시지를 처리할 수 있게 합니다
-  window.sendMessageToMain = handleSendMessage;
 
   return (
     <Frame>
-      {!showChatInterface ? (
+      {!isChatActive ? (
         // 기본 메인 화면 UI
         <>
           <View style={styles.profileSection}>
@@ -189,6 +121,7 @@ export default function MainScreen() {
             ref={scrollViewRef}
             style={styles.messagesContainer}
             contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
             {messages.map((message) => (
               <View
