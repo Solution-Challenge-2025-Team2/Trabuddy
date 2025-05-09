@@ -91,7 +91,6 @@ const Sidebar = ({ navigation }) => {
             style={styles.profileImage}
           />
         </View>
-        <Text style={styles.userName}>로그인됨</Text>
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
@@ -223,11 +222,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-  },
-  userName: {
-    fontFamily: "OriginalSurfer",
-    fontSize: 24,
-    marginBottom: 10,
   },
   logoutButton: {
     backgroundColor: "#EEF7FB",
