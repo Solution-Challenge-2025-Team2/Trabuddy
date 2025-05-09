@@ -12,6 +12,8 @@ import PersonalContent from "./screens/PersonalContentScreen"; //personal conten
 import Prepare from "./screens/PrepareScreen"; // prepare page
 import MyPage from "./screens/MyPageScreen"; // my page
 import Sidebar from "./screens/SidebarScreen"; // Sidebar (header, footer 제외)
+import HistoryCulture from "./screens/HistoryCultureScreen"; // 추가: History/Culture 페이지
+import Login from "./screens/LoginScreen"; // 추가: 로그인 페이지
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +37,8 @@ export default function App() {
         <Stack.Screen name="MyPage" component={MyPage} />
         {/* Add other screens here */}
         <Stack.Screen name="Sidebar" component={Sidebar} />
+        <Stack.Screen name="HistoryCulture" component={HistoryCulture} />
+        <Stack.Screen name="Login" component={Login} />
       </Stack.Navigator>
     </NavigationContainer>
   );
