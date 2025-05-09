@@ -19,7 +19,7 @@ export default function Header({ AppName }) {
             navigation.navigate("Sidebar");
           }
         }}
-        // 사이드바 버튼 누르면 페이지 이동
+      // 사이드바 버튼 누르면 페이지 이동
       >
         <Text style={styles.sidebarButton}>☰</Text> {/* 아이콘 바꾸어야 함 */}
       </TouchableOpacity>
