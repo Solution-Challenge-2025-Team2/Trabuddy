@@ -14,6 +14,7 @@ import MyPage from "./screens/MyPageScreen"; // my page
 import Sidebar from "./screens/SidebarScreen"; // Sidebar (header, footer 제외)
 import HistoryCulture from "./screens/HistoryCultureScreen"; // 추가: History/Culture 페이지
 import Login from "./screens/LoginScreen"; // 추가: 로그인 페이지
+import { ChatProvider } from "./context/ChatContext"; // 추가: 채팅 컨텍스트
 
 const Stack = createNativeStackNavigator();
 
@@ -28,18 +29,20 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Main" component={Main} />
-        <Stack.Screen name="Emergency" component={Emergency} />
-        <Stack.Screen name="PersonalContent" component={PersonalContent} />
-        <Stack.Screen name="PrepareTravels" component={Prepare} />
-        <Stack.Screen name="MyPage" component={MyPage} />
-        {/* Add other screens here */}
-        <Stack.Screen name="Sidebar" component={Sidebar} />
-        <Stack.Screen name="HistoryCulture" component={HistoryCulture} />
-        <Stack.Screen name="Login" component={Login} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ChatProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Main" component={Main} />
+          <Stack.Screen name="Emergency" component={Emergency} />
+          <Stack.Screen name="PersonalContent" component={PersonalContent} />
+          <Stack.Screen name="PrepareTravels" component={Prepare} />
+          <Stack.Screen name="MyPage" component={MyPage} />
+          {/* Add other screens here */}
+          <Stack.Screen name="Sidebar" component={Sidebar} />
+          <Stack.Screen name="HistoryCulture" component={HistoryCulture} />
+          <Stack.Screen name="Login" component={Login} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ChatProvider>
   );
 }

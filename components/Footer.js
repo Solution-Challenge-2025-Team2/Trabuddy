@@ -1,20 +1,26 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { TextInput } from "react-native";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 추가
+import { useNavigation, useRoute } from "@react-navigation/native"; // 네비게이션 추가
 
 export default function Footer() {
   const [message, setMessage] = useState('');
+  const { addMessage } = useChat(); // 채팅 컨텍스트에서 addMessage 함수 가져오기
+  const navigation = useNavigation(); // 네비게이션 객체
+  const route = useRoute(); // 현재 경로
 
   const handleSendMessage = () => {
     if (message.trim() === '') return;
 
-    // 전역 함수를 통해 메인 화면으로 메시지 전달
-    if (typeof window.sendMessageToMain === 'function') {
-      window.sendMessageToMain(message);
-      setMessage('');
-    } else {
-      console.warn('sendMessageToMain is not defined. Message will not be sent to main screen.');
+    // 메시지 전송 및 입력창 초기화
+    addMessage(message);
+    setMessage('');
+
+    // 현재 화면이 Main이 아니면 Main으로 이동
+    if (route.name !== "Main") {
+      navigation.navigate("Main");
     }
   };
 
