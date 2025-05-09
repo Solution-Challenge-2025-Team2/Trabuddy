@@ -51,12 +51,19 @@ export const ChatProvider = ({ children }) => {
         }
     };
 
+    // 채팅을 초기화하는 함수
+    const resetChat = () => {
+        setMessages([]);
+        setIsChatActive(false);
+    };
+
     // 컨텍스트 값 설정
     const value = {
         messages,
         isChatActive,
         addMessage,
-        setIsChatActive
+        setIsChatActive,
+        resetChat
     };
 
     return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

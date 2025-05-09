@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Keyboard } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { TextInput } from "react-native";
 import { useState } from "react";
@@ -18,15 +18,24 @@ export default function Footer() {
     addMessage(message);
     setMessage('');
 
+    // 키보드 내리기
+    Keyboard.dismiss();
+
     // 현재 화면이 Main이 아니면 Main으로 이동
     if (route.name !== "Main") {
-      navigation.navigate("Main");
+      // 키보드가 내려간 후 네비게이션 실행
+      setTimeout(() => {
+        navigation.navigate("Main");
+      }, 50); // 50ms 지연
     }
   };
 
   const handleVoiceInput = () => {
     // 음성 입력 기능 구현 (향후 구현)
     console.log('Voice input pressed');
+
+    // 키보드가 열려있다면 닫기
+    Keyboard.dismiss();
   };
 
   return (
