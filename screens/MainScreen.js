@@ -61,7 +61,7 @@ export default function MainScreen() {
   };
 
   const speakText = (text) => {
-    Speech.speak(text, { language: "en-US", rate: 1.2, pitch: 0.7 }); // 영어는 'en-US'
+    Speech.speak(text, { language: "en-US", rate: 1.0, pitch: 0.5 }); // 영어는 'en-US'
   };
 
   // 메시지 렌더링 함수
