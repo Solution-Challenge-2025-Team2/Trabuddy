@@ -1,15 +1,26 @@
 import React, { useRef } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   FontAwesome5,
   MaterialIcons,
   MaterialCommunityIcons,
-  Ionicons
+  Ionicons,
 } from "@expo/vector-icons";
 import Frame from "../Frame";
 import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 사용
+import * as Speech from "expo-speech";
 
 // 앱의 주요 색상 정의
 const COLORS = {
@@ -49,6 +60,10 @@ export default function MainScreen() {
     addMessage("Ask me anything you're curious about", false);
   };
 
+  const speakText = (text) => {
+    Speech.speak(text, { language: "en-US", rate: 1.2, pitch: 0.7 }); // 영어는 'en-US'
+  };
+
   // 메시지 렌더링 함수
   const renderMessage = (message) => {
     if (message.isUser) {
@@ -61,17 +76,23 @@ export default function MainScreen() {
         </View>
       );
     } else {
-      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지
+      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지 + TTS 아이콘
       return (
         <View key={message.id} style={styles.botMessageContainer}>
           <View style={styles.botProfileContainer}>
             <Image
-              source={require('../assets/figma_images/trabuddy_face.png')}
+              source={require("../assets/figma_images/trabuddy_face.png")}
               style={styles.botProfileImage}
             />
           </View>
           <View style={[styles.messageBubble, styles.botMessageBubble]}>
             <Text style={styles.messageText}>{message.text}</Text>
+            <TouchableOpacity
+              onPress={() => speakText(message.text)}
+              style={{ marginLeft: 8, marginTop: 4 }}
+            >
+              <MaterialIcons name="volume-up" size={20} color="#6DC0ED" />
+            </TouchableOpacity>
           </View>
         </View>
       );
@@ -92,7 +113,7 @@ export default function MainScreen() {
               end={{ x: 1, y: 1 }}
             >
               <Image
-                source={require('../assets/figma_images/trabuddy_face.png')}
+                source={require("../assets/figma_images/trabuddy_face.png")}
                 style={styles.profileImage}
               />
             </LinearGradient>
@@ -121,7 +142,11 @@ export default function MainScreen() {
                     end={{ x: 1, y: 1 }}
                     style={styles.iconBox}
                   >
-                    <FontAwesome5 name="university" size={40} color={COLORS.white} />
+                    <FontAwesome5
+                      name="university"
+                      size={40}
+                      color={COLORS.white}
+                    />
                   </LinearGradient>
                   <Text style={styles.iconText}>History &{"\n"}Culture</Text>
                 </TouchableOpacity>
@@ -138,7 +163,11 @@ export default function MainScreen() {
                     end={{ x: 1, y: 1 }}
                     style={styles.iconBox}
                   >
-                    <MaterialIcons name="attractions" size={40} color={COLORS.white} />
+                    <MaterialIcons
+                      name="attractions"
+                      size={40}
+                      color={COLORS.white}
+                    />
                   </LinearGradient>
                   <Text style={styles.iconText}>Personal{"\n"}Content</Text>
                 </TouchableOpacity>
@@ -158,7 +187,11 @@ export default function MainScreen() {
                     end={{ x: 1, y: 1 }}
                     style={styles.iconBox}
                   >
-                    <MaterialIcons name="luggage" size={40} color={COLORS.white} />
+                    <MaterialIcons
+                      name="luggage"
+                      size={40}
+                      color={COLORS.white}
+                    />
                   </LinearGradient>
                   <Text style={styles.iconText}>Prepare{"\n"}Travel</Text>
                 </TouchableOpacity>
@@ -175,7 +208,11 @@ export default function MainScreen() {
                     end={{ x: 1, y: 1 }}
                     style={styles.iconBox}
                   >
-                    <MaterialCommunityIcons name="medical-bag" size={40} color={COLORS.white} />
+                    <MaterialCommunityIcons
+                      name="medical-bag"
+                      size={40}
+                      color={COLORS.white}
+                    />
                   </LinearGradient>
                   <Text style={styles.iconText}>Emergency</Text>
                 </TouchableOpacity>
@@ -197,7 +234,11 @@ export default function MainScreen() {
             >
               <View style={styles.askBoxContent}>
                 <View style={styles.askBoxIconContainer}>
-                  <Ionicons name="chatbubble-ellipses" size={32} color={COLORS.white} />
+                  <Ionicons
+                    name="chatbubble-ellipses"
+                    size={32}
+                    color={COLORS.white}
+                  />
                 </View>
                 <View style={styles.askBoxTextContainer}>
                   <Text style={styles.askTitle}>AI Travel Assistant</Text>
@@ -212,15 +253,17 @@ export default function MainScreen() {
       ) : (
         // 채팅 인터페이스 UI
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.chatContainer}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 20}
         >
           <ScrollView
             ref={scrollViewRef}
             style={styles.messagesContainer}
             contentContainerStyle={styles.messagesContent}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() =>
+              scrollViewRef.current?.scrollToEnd({ animated: true })
+            }
           >
             {messages.map(renderMessage)}
           </ScrollView>
@@ -270,7 +313,6 @@ const styles = StyleSheet.create({
   nickname: {
     fontSize: 32,
     fontFamily: "Outfit",
-    fontWeight: "bold",
     color: COLORS.textDark,
   },
 
@@ -291,7 +333,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontFamily: "Outfit",
-    fontWeight: "bold",
     color: COLORS.textDark,
     marginLeft: 8,
     marginBottom: 16,
@@ -306,7 +347,7 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     alignItems: "center",
-    width: '48%',
+    width: "48%",
     marginHorizontal: 2,
   },
   iconBox: {
@@ -376,11 +417,11 @@ const styles = StyleSheet.create({
   // 채팅 인터페이스 스타일
   chatContainer: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   messagesContainer: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   messagesContent: {
     padding: 16,
@@ -388,15 +429,15 @@ const styles = StyleSheet.create({
   },
   // 사용자 메시지 스타일
   userMessageContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     marginBottom: 16,
   },
   // AI 메시지 스타일
   botMessageContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   // AI 프로필 이미지 영역
@@ -411,7 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   messageBubble: {
-    maxWidth: '75%',
+    maxWidth: "75%",
     padding: 14,
     borderRadius: 20,
     elevation: 3,
@@ -421,21 +462,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   userMessageBubble: {
-    backgroundColor: '#E3F2FD',
-    alignSelf: 'flex-end',
+    backgroundColor: "#E3F2FD",
+    alignSelf: "flex-end",
     borderTopRightRadius: 4,
     borderWidth: 1,
-    borderColor: '#BBDEFB',
+    borderColor: "#BBDEFB",
   },
   botMessageBubble: {
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 4,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: "#EEEEEE",
   },
   messageText: {
     fontSize: 16,
-    fontFamily: 'Outfit',
+    fontFamily: "Outfit",
     color: COLORS.textDark,
   },
 });
