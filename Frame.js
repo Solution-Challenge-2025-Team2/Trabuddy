@@ -1,4 +1,12 @@
-import { View, StyleSheet, ImageBackground, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ImageBackground,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from "react-native";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,10 +25,10 @@ export default function Frame({
   // 키보드 애니메이션 속도 감지
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (e) => {
         // 키보드 애니메이션 시간 설정 (iOS만 제공)
-        if (Platform.OS === 'ios' && e.duration) {
+        if (Platform.OS === "ios" && e.duration) {
           setKeyboardDuration(e.duration);
         }
       }
@@ -35,9 +43,9 @@ export default function Frame({
   const wrapperProps = disableBackground
     ? { style: styles.container }
     : {
-      source: require("./assets/background-img.png"),
-      style: styles.container,
-    };
+        source: require("./assets/background-img.png"),
+        style: styles.container,
+      };
   return (
     <SafeAreaView style={styles.safeArea}>
       <Wrapper {...wrapperProps}>
@@ -46,9 +54,9 @@ export default function Frame({
         </View>
 
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
           contentContainerStyle={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
           enableAutomaticScroll={true}
@@ -56,7 +64,7 @@ export default function Frame({
           enableOnAndroid={true}
           // iOS에서 애니메이션 속도 동기화
           iosTransitionConfig={{
-            timing: { duration: keyboardDuration }
+            timing: { duration: keyboardDuration },
           }}
         >
           <ScrollView contentContainerStyle={styles.content}>
