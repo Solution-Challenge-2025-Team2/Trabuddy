@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useChat } from "../context/ChatContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from "expo-speech";
 
 const Sidebar = ({ navigation }) => {
   // 로그인 상태 관리
@@ -71,11 +72,28 @@ const Sidebar = ({ navigation }) => {
   // 채팅 초기화 후 네비게이션 함수
   const handleResetChatAndNavigate = () => {
     Keyboard.dismiss(); // 키보드 내리기
+
+    // 채팅 초기화 - 새 세션도 생성됨
     resetChat();
+
+    // TTS가 실행 중이면 중지
+    if (Speech && Speech.stop) {
+      Speech.stop();
+    }
 
     // 키보드가 내려간 후 네비게이션 실행
     setTimeout(() => {
       navigation.navigate("Main");
+
+      // 새 채팅 시작 알림
+      setTimeout(() => {
+        Alert.alert(
+          "새 채팅",
+          "새로운 채팅을 시작합니다.",
+          [{ text: "확인" }],
+          { cancelable: true }
+        );
+      }, 300);
     }, 50); // 50ms 지연
   };
 
