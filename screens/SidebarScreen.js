@@ -18,86 +18,100 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from "expo-speech";
 
 const Sidebar = ({ navigation }) => {
-  // 로그인 상태 관리
+  // Login state management
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { resetChat } = useChat();
 
-  // 컴포넌트 마운트 시 토큰 확인
+  // Check token on component mount
   useEffect(() => {
     checkLoginStatus();
   }, []);
 
-  // 로그인 상태 확인 함수
+  // Check login status function
   const checkLoginStatus = async () => {
     try {
       const token = await AsyncStorage.getItem('access_token');
-      setIsLoggedIn(!!token); // 토큰이 있으면 로그인 상태로 설정
+      setIsLoggedIn(!!token); // Set logged in if token exists
     } catch (error) {
-      console.error('토큰 확인 오류:', error);
+      console.error('Error checking token:', error);
     }
   };
 
-  // 로그아웃 함수
+  // Logout function
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('access_token');
       setIsLoggedIn(false);
-      Alert.alert('알림', '로그아웃되었습니다.');
+
+      // Reset chat on logout
+      resetChat();
+
+      // Stop TTS if running
+      if (Speech && Speech.stop) {
+        Speech.stop();
+      }
+
+      Alert.alert('Notice', 'You have been logged out.');
+
+      // Navigate to main screen
+      setTimeout(() => {
+        navigation.navigate("Main");
+      }, 50);
     } catch (error) {
-      console.error('로그아웃 오류:', error);
-      Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'There was a problem during logout.');
     }
   };
 
-  // 페이지 이동 시 키보드 내리는 함수
+  // Function to dismiss keyboard when navigating
   const navigateAndDismissKeyboard = (screenName) => {
-    Keyboard.dismiss(); // 키보드 내리기
+    Keyboard.dismiss(); // Dismiss keyboard
 
-    // 키보드가 내려간 후 네비게이션 실행
+    // Navigate after keyboard is dismissed
     setTimeout(() => {
       navigation.navigate(screenName);
-    }, 50); // 50ms 지연
+    }, 50); // 50ms delay
   };
 
-  // 단순 네비게이션 함수 (채팅 초기화 없음)
+  // Simple navigation function (no chat reset)
   const handleNavigateToMain = () => {
-    Keyboard.dismiss(); // 키보드 내리기
+    Keyboard.dismiss(); // Dismiss keyboard
 
-    // 키보드가 내려간 후 네비게이션 실행
+    // Navigate after keyboard is dismissed
     setTimeout(() => {
       navigation.navigate("Main");
-    }, 50); // 50ms 지연
+    }, 50); // 50ms delay
   };
 
-  // 채팅 초기화 후 네비게이션 함수
+  // Navigation function with chat reset
   const handleResetChatAndNavigate = () => {
-    Keyboard.dismiss(); // 키보드 내리기
+    Keyboard.dismiss(); // Dismiss keyboard
 
-    // 채팅 초기화 - 새 세션도 생성됨
+    // Reset chat - also creates new session
     resetChat();
 
-    // TTS가 실행 중이면 중지
+    // Stop TTS if running
     if (Speech && Speech.stop) {
       Speech.stop();
     }
 
-    // 키보드가 내려간 후 네비게이션 실행
+    // Navigate after keyboard is dismissed
     setTimeout(() => {
       navigation.navigate("Main");
 
-      // 새 채팅 시작 알림
+      // New chat alert
       setTimeout(() => {
         Alert.alert(
-          "새 채팅",
-          "새로운 채팅을 시작합니다.",
-          [{ text: "확인" }],
+          "New Chat",
+          "Starting a new chat session.",
+          [{ text: "OK" }],
           { cancelable: true }
         );
       }, 300);
-    }, 50); // 50ms 지연
+    }, 50); // 50ms delay
   };
 
-  // 로그인 후 상단에 표시할 사용자 정보 컴포넌트
+  // User info component to display after login
   const renderUserInfo = () => {
     if (!isLoggedIn) return null;
 
@@ -119,7 +133,7 @@ const Sidebar = ({ navigation }) => {
     );
   };
 
-  // 로그인 버튼 (비로그인 상태일 때만 표시)
+  // Login button (only shown when not logged in)
   const renderLoginButton = () => {
     if (isLoggedIn) return null;
 
@@ -142,10 +156,10 @@ const Sidebar = ({ navigation }) => {
 
   return (
     <Frame AppName="" disableBackground={true} style={styles.container}>
-      {/* 사용자 정보 (로그인 상태일 때만 표시) */}
+      {/* User info (only displayed when logged in) */}
       {renderUserInfo()}
 
-      {/* 메뉴 아이템 */}
+      {/* Menu items */}
       <View style={styles.menuContainer}>
         <View style={styles.chatMenuItem}>
           <TouchableOpacity
@@ -205,7 +219,7 @@ const Sidebar = ({ navigation }) => {
         )}
       </View>
 
-      {/* 로그인 버튼 (화면 아래쪽에 배치) */}
+      {/* Login button (placed at bottom of screen) */}
       <View style={styles.loginButtonContainer}>
         {renderLoginButton()}
       </View>
