@@ -20,6 +20,7 @@ import {
 } from "@expo/vector-icons";
 import Frame from "../Frame";
 import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 사용
+import * as Speech from "expo-speech";
 
 // 앱의 주요 색상 정의
 const COLORS = {
@@ -59,6 +60,10 @@ export default function MainScreen() {
     addMessage("Ask me anything you're curious about", false);
   };
 
+  const speakText = (text) => {
+    Speech.speak(text, { language: "en-US", rate: 1.2, pitch: 0.7 }); // 영어는 'en-US'
+  };
+
   // 메시지 렌더링 함수
   const renderMessage = (message) => {
     if (message.isUser) {
@@ -71,7 +76,7 @@ export default function MainScreen() {
         </View>
       );
     } else {
-      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지
+      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지 + TTS 아이콘
       return (
         <View key={message.id} style={styles.botMessageContainer}>
           <View style={styles.botProfileContainer}>
@@ -82,6 +87,12 @@ export default function MainScreen() {
           </View>
           <View style={[styles.messageBubble, styles.botMessageBubble]}>
             <Text style={styles.messageText}>{message.text}</Text>
+            <TouchableOpacity
+              onPress={() => speakText(message.text)}
+              style={{ marginLeft: 8, marginTop: 4 }}
+            >
+              <MaterialIcons name="volume-up" size={20} color="#6DC0ED" />
+            </TouchableOpacity>
           </View>
         </View>
       );
