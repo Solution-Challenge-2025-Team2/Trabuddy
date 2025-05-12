@@ -17,7 +17,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../components/Header";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createChatSession } from '../services/chatService';
+import { useChat } from "../context/ChatContext";
+import * as Speech from "expo-speech";
 
 export default function LoginScreen({ navigation }) {
     const [isLogin, setIsLogin] = useState(true); // true: 로그인, false: 회원가입
@@ -30,6 +31,7 @@ export default function LoginScreen({ navigation }) {
     const [idCheckMessage, setIdCheckMessage] = useState("");
     const [isIdAvailable, setIsIdAvailable] = useState(false);
     const [isCheckingId, setIsCheckingId] = useState(false);
+    const { resetChat, clearChatOnly, setIsLoggedIn } = useChat(); // setIsLoggedIn 추가
 
     const toggleMode = () => {
         setIsLogin(!isLogin);
@@ -114,19 +116,58 @@ export default function LoginScreen({ navigation }) {
         }
         setIsLoading(true);
         try {
+            console.log('로그인 시도:', username);
+
             const response = await fetch("http://3.106.58.224:3000/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),
             });
+
+            // HTTP 상태 코드 로깅
+            console.log('로그인 응답 상태 코드:', response.status);
+
             const data = await response.json();
+
+            // 전체 응답 데이터 로깅
+            console.log('로그인 응답 데이터:', JSON.stringify(data));
+
             if (data.access_token) {
+                console.log('토큰 수신 성공:', data.access_token.substring(0, 20) + '...');
+                console.log('세션ID 포함 여부:', data.sessionId ? '포함' : '미포함');
+
+                // 로그인 상태 업데이트 - 이 부분을 먼저 실행
+                setIsLoggedIn(true);
+                console.log('로그인 상태 true로 업데이트');
+
+                // 토큰 저장
                 await AsyncStorage.setItem("access_token", data.access_token);
 
-                try {
-                    await createChatSession();
-                } catch (sessionError) {
-                    console.error('채팅 세션 생성 실패:', sessionError);
+                // sessionId가 존재하면 저장
+                if (data.sessionId) {
+                    await AsyncStorage.setItem("current_session_id", data.sessionId.toString());
+                    console.log('로그인 성공 - 기존 세션ID 저장됨:', data.sessionId);
+                } else {
+                    // 기존 세션ID가 있으면 유지, 없으면 null 상태로 둠
+                    const existingSessionId = await AsyncStorage.getItem("current_session_id");
+                    console.log('로그인 성공 - 세션ID 없음. 기존 세션ID:', existingSessionId || 'null');
+                }
+
+                // AsyncStorage 내용 확인용 디버깅 로그
+                const storedToken = await AsyncStorage.getItem("access_token");
+                const storedSessionId = await AsyncStorage.getItem("current_session_id");
+                console.log('저장된 토큰 확인:', storedToken ? '있음' : '없음');
+                console.log('저장된 세션ID 확인:', storedSessionId || 'null');
+
+                // 상태 업데이트 후 약간의 지연 추가
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // 로그인 성공 시 채팅만 초기화하고 세션은 생성하지 않음
+                await clearChatOnly();
+
+                // TTS가 실행 중이면 중지
+                if (Speech && Speech.stop) {
+                    Speech.stop();
                 }
 
                 Alert.alert("성공", "로그인이 완료되었습니다", [
@@ -141,9 +182,11 @@ export default function LoginScreen({ navigation }) {
                     },
                 ]);
             } else {
+                console.log('로그인 실패: 토큰 없음');
                 Alert.alert("오류", "아이디 또는 비밀번호가 일치하지 않습니다");
             }
         } catch (error) {
+            console.error('로그인 요청 오류:', error);
             Alert.alert("오류", "로그인 중 문제가 발생했습니다");
         } finally {
             setIsLoading(false);

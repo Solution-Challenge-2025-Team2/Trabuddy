@@ -2,9 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://3.106.58.224:3000';
 
-// 네트워크 요청 로깅 헬퍼 함수
+// Network request logging helper function
 const logNetworkRequest = async (url, method, headers, body) => {
-    console.log('📡 API 요청 ===================');
+    console.log('📡 API Request ===================');
     console.log(`URL: ${url}`);
     console.log(`Method: ${method}`);
     console.log('Headers:', headers);
@@ -14,9 +14,9 @@ const logNetworkRequest = async (url, method, headers, body) => {
     console.log('==============================');
 };
 
-// 네트워크 응답 로깅 헬퍼 함수
+// Network response logging helper function
 const logNetworkResponse = async (url, status, data) => {
-    console.log('📡 API 응답 ===================');
+    console.log('📡 API Response ===================');
     console.log(`URL: ${url}`);
     console.log(`Status: ${status}`);
     console.log('Data:', data);
@@ -24,115 +24,136 @@ const logNetworkResponse = async (url, status, data) => {
 };
 
 /**
- * 새로운 채팅 세션을 생성하는 함수
- * @returns {Promise<number>} - 생성된 세션 ID
+ * Function to create a new chat session
+ * @returns {Promise<number>} - The created session ID
  */
 export const createChatSession = async () => {
     try {
-        // JWT 토큰 가져오기
+        console.log('createChatSession: 새 세션 생성 시작');
+
+        // Get JWT token
         const token = await AsyncStorage.getItem('access_token');
+        console.log('createChatSession: 토큰 존재 여부:', !!token);
 
         if (!token) {
-            throw new Error('로그인이 필요합니다');
+            console.error('createChatSession: 토큰 없음 - 로그인 필요');
+            throw new Error('Login required');
         }
 
         const url = `${API_URL}/chat/session`;
+        console.log('createChatSession: API 요청 URL:', url);
+
         const headers = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         };
 
-        // 요청 로깅
+        // Log request
         await logNetworkRequest(url, 'POST', headers);
 
-        // API 요청
+        // API request
+        console.log('createChatSession: API 요청 전송 중...');
         const response = await fetch(url, {
             method: 'POST',
             headers: headers
         });
+        console.log('createChatSession: API 응답 상태 코드:', response.status);
 
-        // 응답 처리
+        // Process response
         const data = await response.json();
 
-        // 응답 로깅
+        // Log response
         await logNetworkResponse(url, response.status, data);
 
         if (!response.ok) {
-            console.error('세션 생성 API 에러:', response.status, data);
-            throw new Error(`세션 생성 오류 (${response.status}): ${data.message || '알 수 없는 오류'}`);
+            console.error('Session creation API error:', response.status, data);
+            throw new Error(`Session creation error (${response.status}): ${data.message || 'Unknown error'}`);
         }
 
-        // 세션 ID를 로컬 스토리지에 저장
+        // Save session ID to local storage
         await AsyncStorage.setItem('current_session_id', data.sessionId.toString());
+        console.log('createChatSession: 새 세션 ID 저장됨:', data.sessionId);
 
-        console.log('채팅 세션 생성 성공:', data.sessionId);
+        console.log('createChatSession: 세션 생성 완료');
         return data.sessionId;
 
     } catch (error) {
-        console.error('채팅 세션 생성 오류:', error);
+        console.error('createChatSession: 세션 생성 오류:', error);
         throw error;
     }
 };
 
 /**
- * 로그인된 사용자의 메시지를 서버로 전송하고 응답을 받아오는 함수
- * @param {string} message - 사용자가 입력한 메시지
- * @returns {Promise<string>} - AI 응답
+ * Function to send a message from logged-in user to the server and get a response
+ * @param {string} message - User input message
+ * @returns {Promise<string>} - AI response
  */
 export const sendChatMessage = async (message) => {
     try {
-        // JWT 토큰 가져오기
+        console.log('chatService: 메시지 전송 시작', message.substring(0, 30) + (message.length > 30 ? '...' : ''));
+
+        // Get JWT token
         const token = await AsyncStorage.getItem('access_token');
+        console.log('chatService: 토큰 존재 여부:', !!token);
 
         if (!token) {
-            throw new Error('로그인이 필요합니다');
+            console.error('chatService: 토큰 없음 - 로그인 필요');
+            throw new Error('Login required');
         }
 
-        // 현재 세션 ID 가져오기
+        // Get current session ID
         let sessionId = await AsyncStorage.getItem('current_session_id');
+        console.log('chatService: 현재 세션ID:', sessionId || 'null');
 
-        // 세션 ID가 없다면 새로 생성
+        // Create new session if session ID doesn't exist
         if (!sessionId) {
             try {
+                console.log('chatService: 세션ID가 없어 새 세션을 생성합니다');
                 sessionId = await createChatSession();
+                console.log('chatService: 새 세션 생성 완료:', sessionId);
             } catch (error) {
-                console.error('세션 생성 실패, 기본값 사용:', error);
-                sessionId = '1'; // 기본값
+                console.error('chatService: 세션 생성 실패:', error);
+                throw new Error('Failed to create chat session');
             }
         }
 
         const url = `${API_URL}/chat/session/${sessionId}`;
+        console.log('chatService: API 요청 URL:', url);
+
         const headers = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         };
         const body = { message };
 
-        // 요청 로깅
+        // Log request
         await logNetworkRequest(url, 'POST', headers, body);
 
-        // API 요청
+        // API request
+        console.log('chatService: API 요청 전송 중...');
         const response = await fetch(url, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(body)
         });
+        console.log('chatService: API 응답 상태 코드:', response.status);
 
-        // 응답 처리
+        // Process response
         const data = await response.json();
 
-        // 응답 로깅
+        // Log response
         await logNetworkResponse(url, response.status, data);
 
         if (!response.ok) {
-            console.error('API 에러:', response.status, data);
-            throw new Error(`API 오류 (${response.status}): ${data.message || '알 수 없는 오류'}`);
+            console.error('API error:', response.status, data);
+            throw new Error(`API error (${response.status}): ${data.message || 'Unknown error'}`);
         }
 
+        console.log('chatService: 메시지 전송 성공');
         return data.response;
 
     } catch (error) {
-        console.error('채팅 메시지 전송 오류:', error);
+        console.error('chatService: 메시지 전송 오류:', error);
         throw error;
     }
 }; 

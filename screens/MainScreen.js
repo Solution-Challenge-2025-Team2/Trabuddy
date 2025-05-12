@@ -20,10 +20,11 @@ import {
   Ionicons,
 } from "@expo/vector-icons";
 import Frame from "../Frame";
-import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 사용
+import { useChat } from "../context/ChatContext"; // Use chat context
 import * as Speech from "expo-speech";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 앱의 주요 색상 정의
+// Define app's main colors
 const COLORS = {
   primary: "#40ABE5",
   primaryDark: "#00527E",
@@ -41,99 +42,160 @@ const COLORS = {
 
 export default function MainScreen() {
   const navigation = useNavigation();
-  const { messages, isChatActive, addMessage, isLoading } = useChat(); // 컨텍스트에서 함수와 상태 가져오기
+  const { messages, isChatActive, addMessage, isLoading, isLoggedIn, setIsLoggedIn } = useChat(); // Get functions and state from context
   const scrollViewRef = useRef(null);
-  const [isSpeaking, setIsSpeaking] = useState(false); // TTS 실행 상태
+  const [isSpeaking, setIsSpeaking] = useState(false); // TTS running state
 
-  // 스크롤뷰를 자동으로 아래로 내리는 함수
+  // 컴포넌트 마운트 시 로그인 상태 확인 및 업데이트
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('access_token');
+        console.log('MainScreen - 토큰 확인:', token ? '있음' : '없음');
+
+        // 토큰이 있으면 로그인 상태로 설정
+        if (token) {
+          if (!isLoggedIn) {
+            console.log('MainScreen - 토큰은 있지만 로그인 상태가 false여서 true로 업데이트');
+            setIsLoggedIn(true);
+          } else {
+            console.log('MainScreen - 토큰 있음, 로그인 상태 이미 true');
+          }
+        } else {
+          if (isLoggedIn) {
+            console.log('MainScreen - 토큰이 없지만 로그인 상태가 true여서 false로 업데이트');
+            setIsLoggedIn(false);
+          } else {
+            console.log('MainScreen - 토큰 없음, 로그인 상태 이미 false');
+          }
+        }
+      } catch (error) {
+        console.error('MainScreen - 로그인 상태 확인 오류:', error);
+      }
+    };
+
+    checkLoginStatus();
+  }, [isLoggedIn, setIsLoggedIn]);
+
+  // Function to automatically scroll to bottom
   const scrollToBottom = () => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   };
 
-  // 메시지 변경시 스크롤 아래로 이동
+  // Scroll down when messages change
   useEffect(() => {
     if (messages.length > 0) {
-      // 짧은 지연 후 스크롤 - 렌더링 완료 후 스크롤하기 위함
+      // Short delay before scrolling - to ensure rendering is complete
       setTimeout(scrollToBottom, 100);
     }
   }, [messages]);
 
-  // TTS가 실행 중인지 확인하는 함수
+  // Function to check if TTS is running
   useEffect(() => {
     const checkSpeechStatus = async () => {
       const speaking = await Speech.isSpeakingAsync();
       setIsSpeaking(speaking);
     };
 
-    // 500ms마다 실행 상태 체크
+    // Check status every 500ms
     const interval = setInterval(checkSpeechStatus, 500);
     return () => clearInterval(interval);
   }, []);
 
-  // 페이지 이동 시 키보드 내리는 함수
+  // Function to dismiss keyboard when navigating
   const navigateAndDismissKeyboard = (screenName) => {
-    Keyboard.dismiss(); // 키보드 내리기
+    Keyboard.dismiss(); // Dismiss keyboard
 
-    // 키보드가 내려간 후 네비게이션 실행
+    // Execute navigation after keyboard is dismissed
     setTimeout(() => {
       navigation.navigate(screenName);
-    }, 50); // 50ms 지연
+    }, 50); // 50ms delay
   };
 
-  // AI Travel Assistant 버튼 클릭 핸들러
+  // AI Travel Assistant button click handler
   const handleAssistantPress = () => {
-    Keyboard.dismiss(); // 키보드 내리기
-    // 앱에서 바로 AI 메시지 추가 (isUser = false)
+    Keyboard.dismiss(); // Dismiss keyboard
+    // Add AI message directly in the app (isUser = false)
     addMessage("Ask me anything you're curious about", false);
   };
 
-  // TTS 함수: 텍스트를 음성으로 변환
+  // TTS function: convert text to speech
   const speakText = (text) => {
     if (isSpeaking) {
-      // 이미 말하고 있다면 중지
+      // Stop if already speaking
       Speech.stop();
       setIsSpeaking(false);
     } else {
-      // 새로운 텍스트 읽기 시작
+      // Start reading new text
       setIsSpeaking(true);
 
       Speech.speak(text, {
         language: "en-US",
         rate: 0.9,
         pitch: 1.0,
-        onDone: () => setIsSpeaking(false), // 완료시 상태 업데이트
-        onStopped: () => setIsSpeaking(false), // 중지시 상태 업데이트
-        onError: () => setIsSpeaking(false), // 오류시 상태 업데이트
+        onDone: () => setIsSpeaking(false), // Update state when complete
+        onStopped: () => setIsSpeaking(false), // Update state when stopped
+        onError: () => setIsSpeaking(false), // Update state on error
       });
     }
   };
 
-  // 메시지 렌더링 함수
+  // Message rendering function
   const renderMessage = (message) => {
-    // 메시지 텍스트 처리 (객체인 경우 answer 필드 사용)
+    // Process message text (use answer field if object)
     let messageText = message.text;
     let imageUrl = null;
 
-    // 객체인 경우 처리
+    // 디버깅: 메시지 구조 출력
+    console.log('renderMessage - 메시지 ID:', message.id);
+    console.log('renderMessage - 메시지 타입:', typeof message.text);
+
+    // Handle if object
     if (typeof message.text === 'object' && message.text !== null) {
-      // {category, answer, image_url} 형태의 객체인 경우
+      console.log('renderMessage - 객체 키:', Object.keys(message.text));
+
+      // If object has format {category, answer, image_url}
       if (message.text.answer) {
         messageText = message.text.answer;
       } else {
-        // 다른 형태의 객체인 경우 JSON 문자열로 변환
+        // Convert other object formats to JSON string
         messageText = JSON.stringify(message.text);
       }
 
-      // 이미지 URL이 있으면 저장
-      if (message.text.image_url) {
-        imageUrl = message.text.image_url;
+      // 다양한 이미지 URL 속성명 검사
+      const possibleImageProps = ['image_url', 'imageURL', 'imageUrl', 'image', 'img_url', 'imgURL', 'imgUrl', 'img'];
+
+      for (const prop of possibleImageProps) {
+        if (message.text[prop]) {
+          imageUrl = message.text[prop];
+          console.log(`renderMessage - 이미지 속성 발견 (${prop}):`, imageUrl);
+          break;
+        }
       }
     }
 
+    // 메시지 자체에서 이미지 URL 속성 검사 (서버 응답 구조가 다른 경우)
+    if (!imageUrl && typeof message === 'object') {
+      const possibleImageProps = ['image_url', 'imageURL', 'imageUrl', 'image', 'img_url', 'imgURL', 'imgUrl', 'img'];
+
+      for (const prop of possibleImageProps) {
+        if (message[prop]) {
+          imageUrl = message[prop];
+          console.log(`renderMessage - 메시지에서 이미지 속성 발견 (${prop}):`, imageUrl);
+          break;
+        }
+      }
+    }
+
+    // 이미지 URL 값 확인
+    if (imageUrl) {
+      console.log('renderMessage - 최종 이미지 URL:', imageUrl);
+    }
+
     if (message.isUser) {
-      // 사용자 메시지 - 오른쪽 정렬
+      // User message - right aligned
       return (
         <View key={message.id} style={styles.userMessageContainer}>
           <View style={[styles.messageBubble, styles.userMessageBubble]}>
@@ -142,7 +204,7 @@ export default function MainScreen() {
         </View>
       );
     } else {
-      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지
+      // AI message - left aligned + profile image
       return (
         <View key={message.id} style={styles.botMessageContainer}>
           <View style={styles.botProfileContainer}>
@@ -162,7 +224,7 @@ export default function MainScreen() {
                 message.isError && styles.errorMessageText
               ]}>{messageText}</Text>
 
-              {/* TTS 버튼 */}
+              {/* TTS button */}
               <TouchableOpacity
                 style={styles.ttsButton}
                 onPress={() => speakText(messageText)}
@@ -175,17 +237,20 @@ export default function MainScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* 이미지가 있으면 표시 */}
+            {/* Show image if available */}
             {imageUrl && (
-              <Image
-                source={{ uri: imageUrl }}
-                style={styles.messageImage}
-                resizeMode="cover"
-                onError={(e) => console.log('이미지 로딩 오류:', e.nativeEvent.error)}
-              />
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={styles.messageImage}
+                  resizeMode="cover"
+                  onError={(e) => console.log('이미지 로딩 오류:', e.nativeEvent.error, '- URL:', imageUrl)}
+                  onLoad={() => console.log('이미지 로드 성공:', imageUrl)}
+                />
+              </View>
             )}
 
-            {/* 카테고리가 있으면 표시 */}
+            {/* Show category if available */}
             {typeof message.text === 'object' && message.text.category && (
               <View style={styles.categoryContainer}>
                 <Text style={styles.categoryText}>
@@ -667,5 +732,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
+  },
+
+  // 이미지 컨테이너 스타일
+  imageContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 5,
   },
 });
