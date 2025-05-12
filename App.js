@@ -17,6 +17,34 @@ import Login from "./screens/LoginScreen"; // 추가: 로그인 페이지
 import { ChatProvider } from "./context/ChatContext"; // 추가: 채팅 컨텍스트
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// 개발용 네트워크 모니터링 설정
+if (__DEV__) {
+  // 기존 console.log 저장
+  const originalConsoleLog = console.log;
+
+  // 콘솔 로그를 더 눈에 띄게 만듭니다
+  console.log = (...args) => {
+    const newArgs = args.map(arg => {
+      if (typeof arg === 'string' && arg.includes('API')) {
+        return `\n🔍 ${arg} 🔍\n`;
+      }
+      return arg;
+    });
+    originalConsoleLog(...newArgs);
+  };
+
+  // 네트워크 요청을 추적하는 코드
+  global._fetch = fetch;
+  global.fetch = (...args) => {
+    const url = args[0].toString();
+    // symbolicate 및 내부 개발 요청은 로그에 출력하지 않음
+    if (!url.includes('symbolicate') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+      console.log(`\n📡 Fetch Request: ${url}\n`);
+    }
+    return global._fetch(...args);
+  };
+}
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {

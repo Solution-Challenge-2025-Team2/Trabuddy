@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Keyboard } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Keyboard, ActivityIndicator } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { TextInput } from "react-native";
 import { useState } from "react";
@@ -7,12 +7,12 @@ import { useNavigation, useRoute } from "@react-navigation/native"; // 네비게
 
 export default function Footer() {
   const [message, setMessage] = useState('');
-  const { addMessage } = useChat(); // 채팅 컨텍스트에서 addMessage 함수 가져오기
+  const { addMessage, isLoading } = useChat(); // 채팅 컨텍스트에서 함수와 상태 가져오기
   const navigation = useNavigation(); // 네비게이션 객체
   const route = useRoute(); // 현재 경로
 
   const handleSendMessage = () => {
-    if (message.trim() === '') return;
+    if (message.trim() === '' || isLoading) return;
 
     // 메시지 전송 및 입력창 초기화
     addMessage(message);
@@ -41,28 +41,35 @@ export default function Footer() {
   return (
     <View style={styles.footer}>
       <View style={styles.inputContainer}>
-        <View style={styles.promptBox}>
+        <View style={[styles.promptBox, isLoading && styles.promptBoxDisabled]}>
           <View style={styles.PromptInput}>
             <TextInput
               style={styles.textInput}
-              placeholder="Type your message..."
-              placeholderTextColor="#888"
+              placeholder={isLoading ? "응답을 기다리는 중..." : "Type your message..."}
+              placeholderTextColor={isLoading ? "#999" : "#888"}
               value={message}
               onChangeText={setMessage}
               onSubmitEditing={handleSendMessage}
+              editable={!isLoading}
             />
           </View>
           <TouchableOpacity
-            style={styles.sendButton}
+            style={[styles.sendButton, isLoading && styles.buttonDisabled]}
             onPress={handleSendMessage}
+            disabled={isLoading}
           >
-            <MaterialIcons name="send" size={24} color="white" />
+            {isLoading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <MaterialIcons name="send" size={24} color="white" />
+            )}
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          style={styles.voiceButton}
+          style={[styles.voiceButton, isLoading && styles.buttonDisabled]}
           onPress={handleVoiceInput}
+          disabled={isLoading}
         >
           <MaterialIcons name="keyboard-voice" size={24} color="white" />
         </TouchableOpacity>
@@ -94,6 +101,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginRight: 12,
   },
+  promptBoxDisabled: {
+    backgroundColor: "#F0F0F0",
+    opacity: 0.8,
+  },
   PromptInput: {
     flex: 1,
     height: 40,
@@ -115,6 +126,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
+  },
+  buttonDisabled: {
+    backgroundColor: "#A9D7F0",
+    opacity: 0.7,
   },
   textInput: {
     fontSize: 16,

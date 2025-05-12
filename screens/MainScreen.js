@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -40,8 +41,36 @@ const COLORS = {
 
 export default function MainScreen() {
   const navigation = useNavigation();
-  const { messages, isChatActive, addMessage } = useChat(); // 컨텍스트에서 함수와 상태 가져오기
+  const { messages, isChatActive, addMessage, isLoading } = useChat(); // 컨텍스트에서 함수와 상태 가져오기
   const scrollViewRef = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false); // TTS 실행 상태
+
+  // 스크롤뷰를 자동으로 아래로 내리는 함수
+  const scrollToBottom = () => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
+  // 메시지 변경시 스크롤 아래로 이동
+  useEffect(() => {
+    if (messages.length > 0) {
+      // 짧은 지연 후 스크롤 - 렌더링 완료 후 스크롤하기 위함
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages]);
+
+  // TTS가 실행 중인지 확인하는 함수
+  useEffect(() => {
+    const checkSpeechStatus = async () => {
+      const speaking = await Speech.isSpeakingAsync();
+      setIsSpeaking(speaking);
+    };
+
+    // 500ms마다 실행 상태 체크
+    const interval = setInterval(checkSpeechStatus, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   // 페이지 이동 시 키보드 내리는 함수
   const navigateAndDismissKeyboard = (screenName) => {
@@ -60,39 +89,110 @@ export default function MainScreen() {
     addMessage("Ask me anything you're curious about", false);
   };
 
+  // TTS 함수: 텍스트를 음성으로 변환
   const speakText = (text) => {
-    Speech.speak(text, { language: "en-US", rate: 1.0, pitch: 0.5 }); // 영어는 'en-US'
+    if (isSpeaking) {
+      // 이미 말하고 있다면 중지
+      Speech.stop();
+      setIsSpeaking(false);
+    } else {
+      // 새로운 텍스트 읽기 시작
+      setIsSpeaking(true);
+
+      Speech.speak(text, {
+        language: "en-US",
+        rate: 0.9,
+        pitch: 1.0,
+        onDone: () => setIsSpeaking(false), // 완료시 상태 업데이트
+        onStopped: () => setIsSpeaking(false), // 중지시 상태 업데이트
+        onError: () => setIsSpeaking(false), // 오류시 상태 업데이트
+      });
+    }
   };
 
   // 메시지 렌더링 함수
   const renderMessage = (message) => {
+    // 메시지 텍스트 처리 (객체인 경우 answer 필드 사용)
+    let messageText = message.text;
+    let imageUrl = null;
+
+    // 객체인 경우 처리
+    if (typeof message.text === 'object' && message.text !== null) {
+      // {category, answer, image_url} 형태의 객체인 경우
+      if (message.text.answer) {
+        messageText = message.text.answer;
+      } else {
+        // 다른 형태의 객체인 경우 JSON 문자열로 변환
+        messageText = JSON.stringify(message.text);
+      }
+
+      // 이미지 URL이 있으면 저장
+      if (message.text.image_url) {
+        imageUrl = message.text.image_url;
+      }
+    }
+
     if (message.isUser) {
       // 사용자 메시지 - 오른쪽 정렬
       return (
         <View key={message.id} style={styles.userMessageContainer}>
           <View style={[styles.messageBubble, styles.userMessageBubble]}>
-            <Text style={styles.messageText}>{message.text}</Text>
+            <Text style={styles.messageText}>{messageText}</Text>
           </View>
         </View>
       );
     } else {
-      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지 + TTS 아이콘
+      // AI 메시지 - 왼쪽 정렬 + 프로필 이미지
       return (
         <View key={message.id} style={styles.botMessageContainer}>
           <View style={styles.botProfileContainer}>
             <Image
-              source={require("../assets/figma_images/trabuddy_face.png")}
+              source={require('../assets/figma_images/trabuddy_face.png')}
               style={styles.botProfileImage}
             />
           </View>
-          <View style={[styles.messageBubble, styles.botMessageBubble]}>
-            <Text style={styles.messageText}>{message.text}</Text>
-            <TouchableOpacity
-              onPress={() => speakText(message.text)}
-              style={{ marginLeft: 8, marginTop: 4 }}
-            >
-              <MaterialIcons name="volume-up" size={20} color="#6DC0ED" />
-            </TouchableOpacity>
+          <View style={[
+            styles.messageBubble,
+            styles.botMessageBubble,
+            message.isError && styles.errorMessageBubble
+          ]}>
+            <View style={styles.messageContentContainer}>
+              <Text style={[
+                styles.messageText,
+                message.isError && styles.errorMessageText
+              ]}>{messageText}</Text>
+
+              {/* TTS 버튼 */}
+              <TouchableOpacity
+                style={styles.ttsButton}
+                onPress={() => speakText(messageText)}
+              >
+                <Ionicons
+                  name={isSpeaking ? "volume-mute" : "volume-high"}
+                  size={16}
+                  color={isSpeaking ? "#F44336" : COLORS.primary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* 이미지가 있으면 표시 */}
+            {imageUrl && (
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.messageImage}
+                resizeMode="cover"
+                onError={(e) => console.log('이미지 로딩 오류:', e.nativeEvent.error)}
+              />
+            )}
+
+            {/* 카테고리가 있으면 표시 */}
+            {typeof message.text === 'object' && message.text.category && (
+              <View style={styles.categoryContainer}>
+                <Text style={styles.categoryText}>
+                  {message.text.category}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       );
@@ -253,19 +353,33 @@ export default function MainScreen() {
       ) : (
         // 채팅 인터페이스 UI
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.chatContainer}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 20}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
         >
           <ScrollView
             ref={scrollViewRef}
             style={styles.messagesContainer}
             contentContainerStyle={styles.messagesContent}
-            onContentSizeChange={() =>
-              scrollViewRef.current?.scrollToEnd({ animated: true })
-            }
+            onContentSizeChange={scrollToBottom}
           >
             {messages.map(renderMessage)}
+
+            {/* 로딩 중 표시 */}
+            {isLoading && (
+              <View style={styles.loadingContainer}>
+                <View style={styles.botProfileContainer}>
+                  <Image
+                    source={require('../assets/figma_images/trabuddy_face.png')}
+                    style={styles.botProfileImage}
+                  />
+                </View>
+                <View style={[styles.messageBubble, styles.botMessageBubble, styles.loadingBubble]}>
+                  <ActivityIndicator size="small" color="#40ABE5" style={styles.loadingIndicator} />
+                  <Text style={styles.loadingText}>답변 작성 중...</Text>
+                </View>
+              </View>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       )}
@@ -478,5 +592,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Outfit",
     color: COLORS.textDark,
+  },
+
+  // 에러 메시지 스타일
+  errorMessageBubble: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#FFCDD2',
+  },
+  errorMessageText: {
+    color: '#D32F2F',
+  },
+
+  // 로딩 표시 스타일
+  loadingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  loadingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  loadingIndicator: {
+    marginRight: 10,
+  },
+  loadingText: {
+    fontFamily: 'Outfit',
+    fontSize: 14,
+    color: '#555',
+  },
+
+  // 이미지 스타일
+  messageImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 5,
+  },
+
+  // 카테고리 스타일
+  categoryContainer: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  categoryText: {
+    fontSize: 12,
+    fontFamily: 'Outfit',
+    color: COLORS.primaryDark,
+    fontWeight: '500',
+  },
+
+  // TTS 버튼 스타일
+  ttsButton: {
+    padding: 6,
+    borderRadius: 15,
+    backgroundColor: '#E3F2FD',
+    marginLeft: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+
+  // 메시지 내용 컨테이너 스타일
+  messageContentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
 });
