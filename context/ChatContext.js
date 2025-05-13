@@ -182,34 +182,49 @@ export const ChatProvider = ({ children }) => {
                                 typeof responseText.message === 'object') {
                                 console.log('준비물 카테고리 응답 감지, 데이터 저장 처리 시작');
 
-                                // 고유 ID 생성 및 저장
-                                const prepMsgId = `preparation_${Date.now()}`;
+                                // 타임스탬프 생성
+                                const timestamp = Date.now();
+
+                                // 기존 ID 생성 방식 유지 (메시지 ID용)
+                                const prepMsgId = `preparation_${timestamp}`;
                                 await AsyncStorage.setItem(prepMsgId, JSON.stringify(responseText));
 
                                 // 현재 활성화된 메시지 ID로 설정
                                 await AsyncStorage.setItem('active_message_id', prepMsgId);
 
+                                // PrepareScreen 형식에 맞게 데이터 강화
+                                const enhancedData = {
+                                    ...responseText,
+                                    timestamp,
+                                    timestampStr: new Date(timestamp).toLocaleString(),
+                                    key: `prep_data_${timestamp}`
+                                };
+
+                                // prep_data_ 형식으로 저장 (PrepareScreen에서 사용하는 형식)
+                                const prepDataKey = `prep_data_${timestamp}`;
+                                await AsyncStorage.setItem(prepDataKey, JSON.stringify(enhancedData));
+
                                 // 가장 최근 준비물 데이터 키로 저장 (PrepareScreen에서 자동으로 로드하기 위함)
-                                await AsyncStorage.setItem('latest_preparation_data_key', prepMsgId);
+                                await AsyncStorage.setItem('latest_preparation_data_key', prepDataKey);
 
                                 // 준비물 데이터 직접 저장 (PrepareScreen에서 바로 사용할 수 있도록)
-                                await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(responseText));
+                                await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(enhancedData));
 
                                 // 준비물 데이터가 존재함을 알리는 플래그 설정
                                 await AsyncStorage.setItem('preparation_data_exists', 'true');
 
-                                console.log('준비물 데이터 저장 완료 - 준비물 데이터 키:', prepMsgId);
+                                console.log('준비물 데이터 저장 완료 - 준비물 데이터 키:', prepDataKey);
 
                                 // 데이터 저장 시간 기록 (PrepareScreen에서 새로운 데이터 여부 확인용)
-                                await AsyncStorage.setItem('preparation_data_timestamp', Date.now().toString());
+                                await AsyncStorage.setItem('preparation_data_timestamp', timestamp.toString());
 
                                 // 글로벌 이벤트 발생 알림 (PrepareScreen에서 감지하도록)
                                 if (global.dispatchPreparationDataEvent) {
                                     console.log('준비물 데이터 이벤트 발생');
-                                    global.dispatchPreparationDataEvent(responseText);
+                                    global.dispatchPreparationDataEvent(enhancedData);
                                 } else {
                                     console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정');
-                                    global.preparationData = responseText;
+                                    global.preparationData = enhancedData;
                                 }
                             }
 
@@ -291,34 +306,49 @@ export const ChatProvider = ({ children }) => {
                                 typeof guestResponse.message === 'object') {
                                 console.log('게스트 준비물 카테고리 응답 감지, 데이터 저장 처리 시작');
 
-                                // 고유 ID 생성 및 저장
-                                const prepMsgId = `preparation_${Date.now()}_guest`;
+                                // 타임스탬프 생성
+                                const timestamp = Date.now();
+
+                                // 기존 ID 생성 방식 유지 (메시지 ID용)
+                                const prepMsgId = `preparation_${timestamp}_guest`;
                                 await AsyncStorage.setItem(prepMsgId, JSON.stringify(guestResponse));
 
                                 // 현재 활성화된 메시지 ID로 설정
                                 await AsyncStorage.setItem('active_message_id', prepMsgId);
 
+                                // PrepareScreen 형식에 맞게 데이터 강화
+                                const enhancedData = {
+                                    ...guestResponse,
+                                    timestamp,
+                                    timestampStr: new Date(timestamp).toLocaleString(),
+                                    key: `prep_data_${timestamp}`
+                                };
+
+                                // prep_data_ 형식으로 저장 (PrepareScreen에서 사용하는 형식)
+                                const prepDataKey = `prep_data_${timestamp}`;
+                                await AsyncStorage.setItem(prepDataKey, JSON.stringify(enhancedData));
+
                                 // 가장 최근 준비물 데이터 키로 저장 (PrepareScreen에서 자동으로 로드하기 위함)
-                                await AsyncStorage.setItem('latest_preparation_data_key', prepMsgId);
+                                await AsyncStorage.setItem('latest_preparation_data_key', prepDataKey);
 
                                 // 준비물 데이터 직접 저장 (PrepareScreen에서 바로 사용할 수 있도록)
-                                await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(guestResponse));
+                                await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(enhancedData));
 
                                 // 준비물 데이터가 존재함을 알리는 플래그 설정
                                 await AsyncStorage.setItem('preparation_data_exists', 'true');
 
-                                console.log('게스트 준비물 데이터 저장 완료 - 준비물 데이터 키:', prepMsgId);
+                                console.log('게스트 준비물 데이터 저장 완료 - 준비물 데이터 키:', prepDataKey);
 
                                 // 데이터 저장 시간 기록 (PrepareScreen에서 새로운 데이터 여부 확인용)
-                                await AsyncStorage.setItem('preparation_data_timestamp', Date.now().toString());
+                                await AsyncStorage.setItem('preparation_data_timestamp', timestamp.toString());
 
                                 // 글로벌 이벤트 발생 알림 (PrepareScreen에서 감지하도록)
                                 if (global.dispatchPreparationDataEvent) {
                                     console.log('준비물 데이터 이벤트 발생 (게스트)');
-                                    global.dispatchPreparationDataEvent(guestResponse);
+                                    global.dispatchPreparationDataEvent(enhancedData);
                                 } else {
                                     console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정 (게스트)');
-                                    global.preparationData = guestResponse;
+                                    global.preparationData = enhancedData;
                                 }
                             }
 
