@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,15 @@ import {
   Dimensions,
   ScrollView,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import Frame from "../Frame";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRoute } from "@react-navigation/native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -68,82 +72,287 @@ const TABS = [
   },
 ];
 
-// Expanded sample card data: at least 3 items per category
-const ALL_CARDS = [
-  {
-    id: "1",
-    title: "Uyuni Salt Desert",
-    img: require("../assets/figma_images/image_15_143_73.png"),
-    sub: "additional info",
-    category: "Place",
-  },
-  {
-    id: "2",
-    title: "Gyeongbokgung",
-    img: require("../assets/figma_images/image_16_143_67.png"),
-    sub: "historical palace",
-    category: "Place",
-  },
-  {
-    id: "5",
-    title: "Eiffel Tower",
-    img: { uri: "https://placehold.co/280x210/eiffel/tower" },
-    sub: "iconic landmark",
-    category: "Place",
-  },
-  {
-    id: "3",
-    title: "Coffee & Cake",
-    img: { uri: "https://placehold.co/280x210/coffee/cake" },
-    sub: "best cafe",
-    category: "F&B",
-  },
-  {
-    id: "6",
-    title: "Sushi Delight",
-    img: { uri: "https://placehold.co/280x210/sushi/delight" },
-    sub: "fresh sushi",
-    category: "F&B",
-  },
-  {
-    id: "7",
-    title: "Taco Fiesta",
-    img: { uri: "https://placehold.co/280x210/taco/fiesta" },
-    sub: "spicy tacos",
-    category: "F&B",
-  },
-  {
-    id: "4",
-    title: "Theme Park Fun",
-    img: { uri: "https://placehold.co/280x210/theme/park" },
-    sub: "rides & games",
-    category: "Activity",
-  },
-  {
-    id: "8",
-    title: "Scuba Diving",
-    img: { uri: "https://placehold.co/280x210/scuba/diving" },
-    sub: "underwater adventure",
-    category: "Activity",
-  },
-  {
-    id: "9",
-    title: "Hot Air Balloon",
-    img: { uri: "https://placehold.co/280x210/air/balloon" },
-    sub: "sky views",
-    category: "Activity",
-  },
-];
-
 export default function PersonalContentScreen() {
+  const route = useRoute();
   const [selectedTab, setSelectedTab] = useState("All");
+  const [contentData, setContentData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  const filteredCards = useMemo(() => {
-    if (selectedTab === "All") return ALL_CARDS;
-    return ALL_CARDS.filter((card) => card.category === selectedTab);
-  }, [selectedTab]);
+  // 디버깅 함수 - 객체의 모든 레벨을 순회하며 필요한 데이터 찾기
+  const findContentData = (obj, path = '') => {
+    console.log(`[경로: ${path}] 객체 검사 중:`, typeof obj);
 
-  const categories = useMemo(() => TABS.filter((tab) => tab.key !== "All"), []);
+    // 객체가 아니면 검사 중단
+    if (!obj || typeof obj !== 'object') return null;
+
+    // 직접 place, f&b, activity 키를 가진 경우
+    if ((obj.place && Array.isArray(obj.place)) ||
+      (obj["f&b"] && Array.isArray(obj["f&b"])) ||
+      (obj.activity && Array.isArray(obj.activity))) {
+      console.log(`[경로: ${path}] 컨텐츠 데이터 발견!`);
+      return obj;
+    }
+
+    // message 필드에 Place, F&B, Activity가 있는 경우
+    if (obj.message && typeof obj.message === 'object') {
+      console.log(`[경로: ${path}.message] 메시지 필드 검사 중`);
+
+      const hasPlace = obj.message.Place && Array.isArray(obj.message.Place);
+      const hasFnB = obj.message['F&B'] && Array.isArray(obj.message['F&B']);
+      const hasActivity = obj.message.Activity && Array.isArray(obj.message.Activity);
+
+      if (hasPlace || hasFnB || hasActivity) {
+        console.log(`[경로: ${path}.message] 카테고리 데이터 발견: Place(${hasPlace}), F&B(${hasFnB}), Activity(${hasActivity})`);
+
+        // 메시지 필드의 데이터를 표준 형식으로 변환
+        return {
+          place: hasPlace ? obj.message.Place.map(item => ({
+            name: item.name,
+            information: item.information,
+            image: item.imageurl || item.imageUrl || item.image_url || item.image || item.img || item.url
+          })) : [],
+          "f&b": hasFnB ? obj.message['F&B'].map(item => ({
+            name: item.name,
+            information: item.information,
+            image: item.imageurl || item.imageUrl || item.image_url || item.image || item.img || item.url
+          })) : [],
+          activity: hasActivity ? obj.message.Activity.map(item => ({
+            name: item.name,
+            information: item.information,
+            image: item.imageurl || item.imageUrl || item.image_url || item.image || item.img || item.url
+          })) : []
+        };
+      }
+    }
+
+    // contents 필드에 데이터가 있는 경우
+    if (obj.contents) {
+      console.log(`[경로: ${path}.contents] 컨텐츠 필드 검사 중`);
+      if (typeof obj.contents === 'object') {
+        return obj.contents;
+      } else if (typeof obj.contents === 'string') {
+        try {
+          const parsed = JSON.parse(obj.contents);
+          return parsed;
+        } catch (e) {
+          console.log(`[경로: ${path}.contents] 문자열 파싱 실패:`, e.message);
+        }
+      }
+    }
+
+    // data 필드에 데이터가 있는 경우
+    if (obj.data && typeof obj.data === 'object') {
+      console.log(`[경로: ${path}.data] data 필드 검사 중`);
+      // data 필드에서 재귀적으로 검색
+      const dataResult = findContentData(obj.data, `${path}.data`);
+      if (dataResult) return dataResult;
+    }
+
+    // text 필드가 객체인 경우 (챗 메시지가 객체로 전달된 경우)
+    if (obj.text && typeof obj.text === 'object') {
+      console.log(`[경로: ${path}.text] text 필드 검사 중`);
+      // text 필드에서 재귀적으로 검색
+      const textResult = findContentData(obj.text, `${path}.text`);
+      if (textResult) return textResult;
+    }
+
+    // 모든 키를 검사해서 중첩된 객체를 찾음
+    for (const key in obj) {
+      if (obj[key] && typeof obj[key] === 'object' && key !== 'data' && key !== 'message' && key !== 'contents' && key !== 'text') {
+        console.log(`[경로: ${path}.${key}] 추가 필드 검사 중`);
+        const nestedResult = findContentData(obj[key], `${path}.${key}`);
+        if (nestedResult) return nestedResult;
+      }
+    }
+
+    return null;
+  };
+
+  // Route 파라미터 또는 AsyncStorage에서 데이터 가져오기
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        let parsedData = null;
+        let dataSource = '';
+
+        // 1. route.params에서 데이터 확인 (자동 내비게이션이나 View more details 버튼에서 직접 전달한 데이터)
+        if (route.params?.messageData) {
+          // 자동 내비게이션인지 일반 버튼 클릭인지 로그로 구분
+          if (route.params.isAutoNavigation) {
+            console.log('자동 내비게이션으로 전달받은 메시지 데이터 발견');
+          } else {
+            console.log('View more details에서 전달받은 메시지 데이터 발견');
+          }
+
+          console.log('메시지 ID:', route.params.messageId);
+          parsedData = route.params.messageData;
+          dataSource = 'route.params.messageData';
+        }
+        // 2. route.params에서 responseData 확인 (이전 방식과의 호환성)
+        else if (route.params?.responseData) {
+          console.log('라우트 파라미터에서 responseData 발견');
+          parsedData = route.params.responseData;
+          dataSource = 'route.params.responseData';
+        }
+        // 3. active_message_id 확인 (View more details에서 저장한 ID)
+        else {
+          const activeMessageId = await AsyncStorage.getItem('active_message_id');
+          console.log('활성 메시지 ID:', activeMessageId);
+
+          if (activeMessageId) {
+            // 활성 메시지 ID로 저장된 데이터 가져오기
+            const messageData = await AsyncStorage.getItem(activeMessageId);
+            if (messageData) {
+              console.log('활성 메시지의 데이터 발견');
+              parsedData = JSON.parse(messageData);
+              dataSource = `AsyncStorage[${activeMessageId}]`;
+            }
+          }
+
+          // 4. 위 방법으로 데이터를 찾지 못한 경우 기본 last_response_data 확인
+          if (!parsedData) {
+            const responseData = await AsyncStorage.getItem('last_response_data');
+            if (responseData) {
+              console.log('AsyncStorage에서 기본 response_data 발견');
+              parsedData = JSON.parse(responseData);
+              dataSource = 'AsyncStorage[last_response_data]';
+            }
+          }
+        }
+
+        console.log('데이터 소스:', dataSource);
+
+        // 테스트 데이터 삽입 (디버깅용, 실제 데이터가 없을 때만 사용)
+        if (!parsedData) {
+          console.log('데이터를 찾을 수 없어 테스트 데이터를 사용합니다');
+          parsedData = {
+            category: "contents",
+            message: {
+              "Place": [
+                {
+                  "name": "에펠탑",
+                  "information": "파리의 상징적인 랜드마크로, 밤에는 아름다운 야경을 감상할 수 있습니다.",
+                  "imageurl": "https://images.pexels.com/photos/532826/pexels-photo-532826.jpeg?auto=compress&cs=tinysrgb&h=350"
+                },
+                {
+                  "name": "루브르 박물관",
+                  "information": "세계적으로 유명한 미술관으로, 모나리자를 비롯한 수많은 걸작들을 소장하고 있습니다.",
+                  "imageurl": "https://images.pexels.com/photos/2363/france-landmark-lights-night.jpg?auto=compress&cs=tinysrgb&h=350"
+                }
+              ],
+              "F&B": [
+                {
+                  "name": "Le Jules Verne",
+                  "information": "에펠탑에 위치한 고급 레스토랑으로, 훌륭한 식사와 파리의 아름다운 전망을 동시에 즐길 수 있습니다.",
+                  "imageurl": "https://images.pexels.com/photos/1446616/pexels-photo-1446616.jpeg?auto=compress&cs=tinysrgb&h=350"
+                }
+              ],
+              "Activity": [
+                {
+                  "name": "센 강 유람선 관광",
+                  "information": "센 강을 따라 유람선을 타고 파리의 아름다운 풍경을 감상할 수 있습니다.",
+                  "imageurl": "https://images.pexels.com/photos/17856787/pexels-photo-17856787.jpeg?auto=compress&cs=tinysrgb&h=350"
+                }
+              ]
+            },
+            "summary": "파리 여행 계획을 도와드리겠습니다!"
+          };
+          dataSource = '테스트 데이터';
+        }
+
+        // 로그에 전체 데이터 구조 출력 (디버깅용)
+        if (parsedData) {
+          console.log('가져온 데이터 키:', Object.keys(parsedData));
+          try {
+            console.log('가져온 데이터 유형:', typeof parsedData);
+            if (typeof parsedData === 'object') {
+              console.log('가져온 데이터 일부:', JSON.stringify(parsedData).substring(0, 200) + '...');
+            }
+          } catch (e) {
+            console.log('데이터 직렬화 오류:', e.message);
+          }
+
+          // 새 함수를 사용하여 컨텐츠 데이터 찾기
+          const contents = findContentData(parsedData);
+
+          // 데이터 설정
+          if (contents) {
+            console.log('컨텐츠 데이터 발견, 설정 시작');
+            setContentData(contents);
+            console.log('컨텐츠 데이터 설정 완료');
+
+            // 데이터 미리보기 로깅
+            const place = contents.place || [];
+            const fnb = contents["f&b"] || [];
+            const activity = contents.activity || [];
+
+            console.log(`데이터 항목 개수: place(${place.length}), f&b(${fnb.length}), activity(${activity.length})`);
+
+            // 각 카테고리별 첫 항목 로깅 (있을 경우)
+            if (place.length > 0) console.log('첫 장소 항목:', JSON.stringify(place[0]));
+            if (fnb.length > 0) console.log('첫 F&B 항목:', JSON.stringify(fnb[0]));
+            if (activity.length > 0) console.log('첫 활동 항목:', JSON.stringify(activity[0]));
+          } else {
+            console.log('컨텐츠 데이터를 찾을 수 없습니다');
+            setContentData(null);
+          }
+        } else {
+          console.log('저장된 응답 데이터가 없습니다');
+          setContentData(null);
+        }
+      } catch (error) {
+        console.error('데이터 가져오기 오류:', error);
+        setContentData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [route.params]);
+
+  // 카테고리별로 필터링된 데이터
+  const filteredContent = useMemo(() => {
+    if (!contentData) return [];
+
+    if (selectedTab === "All") {
+      return [
+        ...(contentData.place || []),
+        ...(contentData["f&b"] || []),
+        ...(contentData.activity || [])
+      ];
+    } else if (selectedTab === "Place") {
+      return contentData.place || [];
+    } else if (selectedTab === "F&B") {
+      return contentData["f&b"] || [];
+    } else if (selectedTab === "Activity") {
+      return contentData.activity || [];
+    }
+
+    return [];
+  }, [selectedTab, contentData]);
+
+  // 각 카테고리별 데이터 목록
+  const categoryContents = useMemo(() => {
+    if (!contentData) return [];
+
+    return [
+      { key: "Place", data: contentData.place || [] },
+      { key: "F&B", data: contentData["f&b"] || [] },
+      { key: "Activity", data: contentData.activity || [] }
+    ].filter(category => category.data.length > 0);
+  }, [contentData]);
+
+  // 아이템 클릭 핸들러
+  const handleItemPress = (item) => {
+    console.log('선택된 아이템:', item);
+    console.log('이미지 URL:', item.image);
+    setSelectedItem(item);
+    setModalVisible(true);
+  };
 
   return (
     <LinearGradient
@@ -215,49 +424,57 @@ export default function PersonalContentScreen() {
           </View>
 
           <View style={styles.scrollableSection}>
-            {selectedTab === "All" ? (
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={FIGMA_COLORS.tabSelectedBg} />
+                <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
+              </View>
+            ) : !contentData ? (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>표시할 데이터가 없습니다.</Text>
+                <Text style={styles.noDataSubText}>
+                  채팅에서 "View more details" 버튼을 클릭하여 데이터를 확인하세요.
+                </Text>
+              </View>
+            ) : selectedTab === "All" ? (
               <ScrollView
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollViewContent}
               >
-                {categories.map((category) => {
-                  const categoryCards = ALL_CARDS.filter(
-                    (c) => c.category === category.key
-                  );
-                  if (categoryCards.length === 0) return null;
+                {categoryContents.map((category) => {
+                  if (category.data.length === 0) return null;
                   return (
                     <View key={category.key} style={styles.categorySectionAll}>
                       <Text style={styles.categoryHeaderAll}>
-                        {category.label}
+                        {category.key}
                       </Text>
                       <FlatList
-                        data={categoryCards}
+                        data={category.data}
                         horizontal
-                        keyExtractor={(c) => c.id}
+                        keyExtractor={(item, index) => `${category.key}-${index}`}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.cardsContainerAll}
-                        renderItem={({ item: card }) => (
+                        renderItem={({ item }) => (
                           <TouchableOpacity
                             style={[styles.cardVertical, { marginRight: 16 }]}
+                            onPress={() => handleItemPress(item)}
                           >
                             <Image
-                              source={card.img}
+                              source={{ uri: item.image || 'https://placehold.co/600x400/png' }}
                               style={styles.cardImageVertical}
                               resizeMode="cover"
+                              onError={(e) => {
+                                console.log('카드 이미지 로딩 오류:', e.nativeEvent.error, '- URL:', item.image);
+                              }}
+                              onLoad={() => console.log('카드 이미지 로드 성공:', item.image?.substring(0, 50) + '...')}
                             />
                             <View style={styles.cardTextContainerVertical}>
                               <Text
                                 style={styles.cardTitleVertical}
                                 numberOfLines={1}
                               >
-                                {card.title}
-                              </Text>
-                              <Text
-                                style={styles.cardSubVertical}
-                                numberOfLines={1}
-                              >
-                                {card.sub}
+                                {item.name}
                               </Text>
                             </View>
                           </TouchableOpacity>
@@ -269,26 +486,30 @@ export default function PersonalContentScreen() {
               </ScrollView>
             ) : (
               <FlatList
-                data={filteredCards}
-                keyExtractor={(c) => c.id}
+                data={filteredContent}
+                keyExtractor={(item, index) => `${selectedTab}-${index}`}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[
                   styles.cardsContainerVertical,
                   styles.scrollViewContent,
                 ]}
-                renderItem={({ item: card }) => (
-                  <TouchableOpacity style={styles.cardVertical}>
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.cardVertical}
+                    onPress={() => handleItemPress(item)}
+                  >
                     <Image
-                      source={card.img}
+                      source={{ uri: item.image || 'https://placehold.co/600x400/png' }}
                       style={styles.cardImageVertical}
                       resizeMode="cover"
+                      onError={(e) => {
+                        console.log('카드 이미지 로딩 오류:', e.nativeEvent.error, '- URL:', item.image);
+                      }}
+                      onLoad={() => console.log('카드 이미지 로드 성공:', item.image?.substring(0, 50) + '...')}
                     />
                     <View style={styles.cardTextContainerVertical}>
                       <Text style={styles.cardTitleVertical} numberOfLines={1}>
-                        {card.title}
-                      </Text>
-                      <Text style={styles.cardSubVertical} numberOfLines={1}>
-                        {card.sub}
+                        {item.name}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -296,6 +517,41 @@ export default function PersonalContentScreen() {
               />
             )}
           </View>
+
+          {/* 상세 정보 모달 */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Ionicons name="close" size={24} color="#000" />
+                </TouchableOpacity>
+
+                {selectedItem && (
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    <Image
+                      source={{ uri: selectedItem.image || 'https://placehold.co/600x400/png' }}
+                      style={styles.modalImage}
+                      resizeMode="cover"
+                      onError={(e) => {
+                        console.log('모달 이미지 로딩 오류:', e.nativeEvent.error, '- URL:', selectedItem.image);
+                      }}
+                      onLoad={() => console.log('모달 이미지 로드 성공:', selectedItem.image?.substring(0, 50) + '...')}
+                    />
+                    <Text style={styles.modalTitle}>{selectedItem.name}</Text>
+                    <Text style={styles.modalDescription}>{selectedItem.information}</Text>
+                  </ScrollView>
+                )}
+              </View>
+            </View>
+          </Modal>
         </View>
       </Frame>
     </LinearGradient>
@@ -431,16 +687,86 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 4,
   },
-  cardSubVertical: {
-    fontFamily: "Outfit",
-    fontSize: 16,
-    fontWeight: "400",
-    color: FIGMA_COLORS.cardSubText,
-    textAlign: "center",
-  },
   cardsContainerVertical: {
     alignItems: "center",
     paddingTop: 10,
     paddingBottom: 20,
   },
+
+  // 로딩 및 빈 데이터 컨테이너
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontFamily: "Outfit",
+    fontSize: 16,
+    color: FIGMA_COLORS.tabSelectedBg,
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  noDataText: {
+    fontFamily: "Outfit",
+    fontSize: 20,
+    fontWeight: "500",
+    color: FIGMA_COLORS.cardTitleText,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  noDataSubText: {
+    fontFamily: "Outfit",
+    fontSize: 16,
+    color: FIGMA_COLORS.cardSubText,
+    textAlign: 'center',
+  },
+
+  // 모달 스타일
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: FIGMA_COLORS.cardBackground,
+    borderRadius: 30,
+    padding: 20,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
+  },
+  modalImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 15,
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontFamily: "Outfit",
+    fontSize: 24,
+    fontWeight: "500",
+    color: FIGMA_COLORS.cardTitleText,
+    marginBottom: 10,
+  },
+  modalDescription: {
+    fontFamily: "Outfit",
+    fontSize: 16,
+    color: FIGMA_COLORS.cardSubText,
+    lineHeight: 24,
+  }
 });

@@ -14,11 +14,15 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   Animated,
+  ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Frame from "../Frame";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { sendChatMessage, sendGuestChatMessage } from "../services/chatService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.7;
@@ -59,7 +63,7 @@ const RECOMMENDED_PLACES = [
   },
 ];
 
-export default function PrepareScreen() {
+export default function PrepareScreen({ navigation, route }) {
   const [startDate, setStartDate] = useState("2025-05-01");
   const [endDate, setEndDate] = useState("2025-05-10");
   const [destination, setDestination] = useState("Jeju Island");
@@ -73,6 +77,131 @@ export default function PrepareScreen() {
   });
   const [selectionMode, setSelectionMode] = useState("none"); // 'none', 'start', 'end'
   const slideAnim = useRef(new Animated.Value(300)).current;
+
+  // 여행 준비물 관련 상태
+  const [isLoadingEssentials, setIsLoadingEssentials] = useState(false);
+  const [essentialsData, setEssentialsData] = useState(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // 준비물 데이터 존재 여부 상태
+  const [savedEssentialsExist, setSavedEssentialsExist] = useState(false);
+
+  // 라우트 파라미터를 통해 전달된 데이터 처리
+  useEffect(() => {
+    const handleRouteParams = async () => {
+      try {
+        // 라우트 파라미터 확인
+        if (route.params && route.params.messageData) {
+          console.log('Prepare 화면으로 데이터가 전달되었습니다:', route.params.messageId);
+
+          const receivedData = route.params.messageData;
+          console.log('전달받은 데이터 카테고리:', receivedData.category);
+
+          // preparation 카테고리인 경우 처리
+          if (receivedData.category === 'preparation' && receivedData.message) {
+            console.log('준비물 데이터 감지:', Object.keys(receivedData.message));
+
+            // 데이터 설정
+            setEssentialsData(receivedData);
+
+            // 데이터 저장
+            await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(receivedData));
+
+            // 준비물 데이터 존재 상태 업데이트
+            setSavedEssentialsExist(true);
+
+            // 모달 표시 여부 결정 (자동으로 표시하지 않음)
+            // View More Details 버튼으로 온 경우에만 모달 자동 표시
+            if (route.params.autoShowModal) {
+              setShowResultsModal(true);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('라우트 파라미터 처리 중 오류:', error);
+      }
+    };
+
+    handleRouteParams();
+  }, [route.params]);
+
+  // 컴포넌트 마운트 시 전역 이벤트 리스너 설정 및 저장된 데이터 확인
+  useEffect(() => {
+    console.log('PrepareScreen 마운트됨');
+
+    // 데이터 리스너 등록
+    const setupPreparationDataListener = () => {
+      console.log('준비물 데이터 리스너 설정');
+
+      // 이벤트 디스패처 정의
+      global.dispatchPreparationDataEvent = (data) => {
+        console.log('준비물 데이터 이벤트 수신', data ? '(데이터 있음)' : '(데이터 없음)');
+
+        if (data) {
+          // 새 데이터로 UI 업데이트
+          setEssentialsData(data);
+          setSavedEssentialsExist(true);
+        }
+      };
+
+      // 이미 저장된 데이터가 있으면 불러오기
+      if (global.preparationData) {
+        console.log('전역 캐시에서 준비물 데이터 발견');
+        setEssentialsData(global.preparationData);
+        setSavedEssentialsExist(true);
+      }
+    };
+
+    // 설정 실행
+    setupPreparationDataListener();
+
+    // 저장된 최신 준비물 데이터 로드
+    const loadLatestPreparationData = async () => {
+      try {
+        // 준비물 데이터 존재 여부 확인
+        const exists = await AsyncStorage.getItem('preparation_data_exists');
+
+        if (exists === 'true') {
+          console.log('저장된 준비물 데이터 존재 확인');
+
+          // 현재 표시된 데이터가 없을 때만 로드
+          if (!essentialsData) {
+            // 저장된 데이터 불러오기
+            const savedData = await AsyncStorage.getItem('travel_essentials_data');
+
+            if (savedData) {
+              try {
+                const parsedData = JSON.parse(savedData);
+                console.log('저장된 준비물 데이터 로드 성공:',
+                  parsedData.category,
+                  parsedData.message ? '(메시지 있음)' : '(메시지 없음)');
+
+                setEssentialsData(parsedData);
+                setSavedEssentialsExist(true);
+              } catch (error) {
+                console.error('준비물 데이터 파싱 오류:', error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('준비물 데이터 로드 오류:', error);
+      }
+    };
+
+    // 데이터 로드 실행
+    loadLatestPreparationData();
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 정리
+    return () => {
+      console.log('PrepareScreen 언마운트, 리스너 제거');
+      // 이벤트 디스패처 제거
+      global.dispatchPreparationDataEvent = null;
+    };
+  }, []);
 
   // 모달이 닫힐 때 slideAnim 값 초기화
   useEffect(() => {
@@ -363,6 +492,143 @@ export default function PrepareScreen() {
     e.stopPropagation();
   };
 
+  // 여행 준비물 찾기 API 호출 함수
+  const findTravelEssentials = async () => {
+    try {
+      // 로딩 상태 시작
+      setIsLoadingEssentials(true);
+      // 즉시 전체 화면 모달 표시
+      setShowResultsModal(true);
+
+      // 메시지 형식 지정
+      const message = `${destination}로 ${formatDisplayDate(startDate)}부터 ${formatDisplayDate(endDate)}기간 동안 여행을 갈거야 준비물을 알려줘`;
+
+      // 토큰 확인하여 로그인 여부 판단
+      const token = await AsyncStorage.getItem('access_token');
+      let response;
+
+      if (token) {
+        // 로그인한 사용자 API 호출
+        console.log('로그인 사용자로 준비물 요청');
+        response = await sendChatMessage(message);
+      } else {
+        // 비로그인 사용자 API 호출
+        console.log('게스트 사용자로 준비물 요청');
+        response = await sendGuestChatMessage(message);
+      }
+
+      console.log('준비물 API 응답:', response);
+
+      // 응답 데이터 저장
+      setEssentialsData(response);
+
+      // 로컬 스토리지에 데이터 저장
+      await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(response));
+      await AsyncStorage.setItem('travel_essentials_destination', destination);
+      await AsyncStorage.setItem('travel_essentials_startDate', startDate);
+      await AsyncStorage.setItem('travel_essentials_endDate', endDate);
+
+      setSelectedCategory("All");
+    } catch (error) {
+      console.error('준비물 가져오기 오류:', error);
+      Alert.alert(
+        "오류",
+        "준비물 정보를 가져오는 중 문제가 발생했습니다. 다시 시도해주세요."
+      );
+      // 오류 발생 시 모달 닫기
+      setShowResultsModal(false);
+    } finally {
+      // 로딩 상태 종료
+      setIsLoadingEssentials(false);
+    }
+  };
+
+  // 저장된 여행 준비물 데이터 불러오기
+  const loadSavedEssentials = async () => {
+    try {
+      const savedData = await AsyncStorage.getItem('travel_essentials_data');
+      const savedDestination = await AsyncStorage.getItem('travel_essentials_destination');
+      const savedStartDate = await AsyncStorage.getItem('travel_essentials_startDate');
+      const savedEndDate = await AsyncStorage.getItem('travel_essentials_endDate');
+
+      if (savedData) {
+        setEssentialsData(JSON.parse(savedData));
+        setShowResultsModal(true);
+        setSelectedCategory("All");
+
+        console.log('저장된 준비물 데이터 불러옴:', savedDestination, savedStartDate, savedEndDate);
+      } else {
+        Alert.alert(
+          "준비물 정보 없음",
+          "저장된 여행 준비물 정보가 없습니다. 'Find Travel Essentials' 버튼으로 새로 생성해주세요."
+        );
+      }
+    } catch (error) {
+      console.error('저장된 준비물 데이터 불러오기 오류:', error);
+      Alert.alert(
+        "오류",
+        "저장된 준비물 정보를 불러오는 중 문제가 발생했습니다."
+      );
+    }
+  };
+
+  // 컴포넌트 마운트 시 저장된 데이터 확인
+  useEffect(() => {
+    const checkSavedData = async () => {
+      const savedData = await AsyncStorage.getItem('travel_essentials_data');
+      if (savedData) {
+        setSavedEssentialsExist(true);
+      }
+    };
+
+    checkSavedData();
+  }, []);
+
+  // 카테고리별 필터링된 데이터 계산
+  const getFilteredItems = useCallback(() => {
+    if (!essentialsData || !essentialsData.message) return [];
+
+    if (selectedCategory === "All") {
+      // 모든 카테고리의 아이템을 하나의 배열로 합침
+      const allItems = [];
+      Object.keys(essentialsData.message).forEach(category => {
+        if (Array.isArray(essentialsData.message[category])) {
+          essentialsData.message[category].forEach(item => {
+            allItems.push({
+              ...item,
+              category // 카테고리 정보 추가
+            });
+          });
+        }
+      });
+      return allItems;
+    } else {
+      // 선택된 카테고리의 아이템만 반환
+      const categoryItems = essentialsData.message[selectedCategory] || [];
+      return categoryItems.map(item => ({
+        ...item,
+        category: selectedCategory
+      }));
+    }
+  }, [essentialsData, selectedCategory]);
+
+  // 아이템 상세 정보 모달 열기
+  const openItemDetail = (item) => {
+    setSelectedItem(item);
+    setShowDetailModal(true);
+  };
+
+  // 아이템 상세 정보 모달 닫기
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+  };
+
+  // 준비물 모달 닫기
+  const closeResultsModal = () => {
+    setShowResultsModal(false);
+    setSavedEssentialsExist(true); // 데이터가 생성되었으므로 상태 업데이트
+  };
+
   return (
     <LinearGradient
       colors={[
@@ -440,12 +706,7 @@ export default function PrepareScreen() {
           <View style={styles.findEssentialsButtonContainer}>
             <TouchableOpacity
               style={styles.findEssentialsButton}
-              onPress={() =>
-                Alert.alert(
-                  "Travel Essentials",
-                  "We recommend essential items based on your selected destination and dates."
-                )
-              }
+              onPress={findTravelEssentials}
             >
               <Text style={styles.findEssentialsButtonText}>
                 Find Travel Essentials
@@ -456,6 +717,22 @@ export default function PrepareScreen() {
                 color={FIGMA_COLORS.cardBackground}
               />
             </TouchableOpacity>
+
+            {savedEssentialsExist && (
+              <TouchableOpacity
+                style={styles.viewSavedEssentialsButton}
+                onPress={loadSavedEssentials}
+              >
+                <Text style={styles.viewSavedEssentialsText}>
+                  View Saved Essentials
+                </Text>
+                <Ionicons
+                  name="eye-outline"
+                  size={22}
+                  color={FIGMA_COLORS.accentBlue}
+                />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* 추천 여행지 섹션 */}
@@ -592,6 +869,133 @@ export default function PrepareScreen() {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* 결과 모달 */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={showResultsModal}
+        onRequestClose={closeResultsModal}
+      >
+        <LinearGradient
+          colors={[FIGMA_COLORS.backgroundGradientStart, FIGMA_COLORS.backgroundGradientEnd]}
+          style={{ flex: 1 }}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.8 }}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={closeResultsModal}
+              >
+                <Ionicons name="chevron-back" size={30} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Travel Essentials</Text>
+              <View style={styles.spacer} />
+            </View>
+
+            {isLoadingEssentials ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={FIGMA_COLORS.accentBlue} />
+                <Text style={styles.loadingText}>여행 준비물 목록을 가져오는 중...</Text>
+              </View>
+            ) : essentialsData ? (
+              <ScrollView
+                style={styles.essentialsScrollView}
+                contentContainerStyle={styles.essentialsContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* 요약 정보 표시 */}
+                {essentialsData.summary && (
+                  <View style={styles.summaryContainer}>
+                    <Text style={styles.summaryText}>{essentialsData.summary}</Text>
+                  </View>
+                )}
+
+                {/* 각 카테고리별 섹션 */}
+                {essentialsData.message && Object.keys(essentialsData.message).map((category) => (
+                  <View key={category} style={styles.categorySection}>
+                    <Text style={styles.categoryTitle}>{category}</Text>
+
+                    {Array.isArray(essentialsData.message[category]) && essentialsData.message[category].length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.categoryScrollView}
+                        contentContainerStyle={styles.categoryScrollContent}
+                      >
+                        {essentialsData.message[category].map((item, index) => (
+                          <TouchableOpacity
+                            key={`${category}-${index}`}
+                            style={styles.itemCard}
+                            onPress={() => openItemDetail(item)}
+                          >
+                            {item.imageurl ? (
+                              <Image
+                                source={{ uri: item.imageurl }}
+                                style={styles.itemImage}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <View style={styles.placeholderImage}>
+                                <Ionicons name="shirt-outline" size={40} color={FIGMA_COLORS.accentBlue} />
+                              </View>
+                            )}
+                            <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <Text style={styles.noItemsText}>해당 카테고리에 준비물이 없습니다.</Text>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>준비물 데이터를 불러올 수 없습니다.</Text>
+              </View>
+            )}
+          </SafeAreaView>
+        </LinearGradient>
+      </Modal>
+
+      {/* 아이템 상세 모달 */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showDetailModal}
+        onRequestClose={closeDetailModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.itemDetailContent}>
+            {selectedItem && (
+              <>
+                {selectedItem.imageurl && (
+                  <Image
+                    source={{ uri: selectedItem.imageurl }}
+                    style={styles.itemDetailImage}
+                    resizeMode="cover"
+                  />
+                )}
+                <Text style={styles.itemDetailTitle}>{selectedItem.name}</Text>
+                <ScrollView style={styles.itemDetailScrollView}>
+                  <Text style={styles.itemDetailCategory}>{selectedItem.category}</Text>
+                  <Text style={styles.itemDetailDescription}>{selectedItem.information}</Text>
+                </ScrollView>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closeDetailModal}
+            >
+              <Ionicons name="close" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </LinearGradient>
   );
@@ -782,7 +1186,7 @@ const CustomDatePicker = React.memo(
                 borderBottomRightRadius: 20,
               },
             ]}
-            onPress={() => handleDateSelect(day)}
+            onPress={() => handleDateSelect({ dateString: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` })}
           >
             <Text
               style={[styles.calendarDayText, isMarked && { color: "white" }]}
@@ -965,6 +1369,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    marginBottom: 15,
+  },
+  viewSavedEssentialsButton: {
+    backgroundColor: 'rgba(240, 248, 255, 0.9)',
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: FIGMA_COLORS.accentBlue,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  viewSavedEssentialsText: {
+    fontFamily: "Outfit",
+    fontSize: 18,
+    fontWeight: "500",
+    color: FIGMA_COLORS.accentBlue,
   },
   findEssentialsButtonText: {
     fontFamily: "Outfit",
@@ -1171,6 +1598,188 @@ const styles = StyleSheet.create({
   calendarDayEmpty: {
     width: 36,
     height: 36,
+  },
+  modalContainer: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    padding: 5,
+  },
+  spacer: {
+    width: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontFamily: "Outfit",
+    fontSize: 18,
+    color: FIGMA_COLORS.primaryText,
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  essentialsScrollView: {
+    flex: 1,
+  },
+  essentialsContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  summaryContainer: {
+    backgroundColor: 'rgba(240, 248, 255, 0.8)',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: '#d0e6ff',
+  },
+  summaryText: {
+    fontFamily: "Outfit",
+    fontSize: 16,
+    color: FIGMA_COLORS.primaryText,
+    lineHeight: 24,
+  },
+  categorySection: {
+    marginBottom: 35,
+  },
+  categoryTitle: {
+    fontFamily: "Outfit",
+    fontSize: 22,
+    fontWeight: "600",
+    color: FIGMA_COLORS.accentBlue,
+    marginBottom: 15,
+    paddingLeft: 5,
+  },
+  categoryScrollView: {
+    marginBottom: 10,
+  },
+  categoryScrollContent: {
+    paddingRight: 20,
+    paddingBottom: 15,
+  },
+  itemCard: {
+    width: 140,
+    marginRight: 15,
+    marginBottom: 10,
+    borderRadius: 15,
+    backgroundColor: FIGMA_COLORS.cardBackground,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  itemImage: {
+    width: '100%',
+    height: 140,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
+  placeholderImage: {
+    width: '100%',
+    height: 140,
+    backgroundColor: '#f0f8ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
+  itemName: {
+    fontFamily: "Outfit",
+    fontSize: 16,
+    fontWeight: "500",
+    color: FIGMA_COLORS.primaryText,
+    padding: 12,
+    paddingVertical: 16,
+    textAlign: 'center',
+    minHeight: 70,
+  },
+  noItemsText: {
+    fontFamily: "Outfit",
+    fontSize: 14,
+    color: FIGMA_COLORS.secondaryText,
+    fontStyle: 'italic',
+    padding: 10,
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noDataText: {
+    fontFamily: "Outfit",
+    fontSize: 18,
+    color: FIGMA_COLORS.secondaryText,
+    textAlign: 'center',
+  },
+  itemDetailContent: {
+    width: "90%",
+    backgroundColor: FIGMA_COLORS.cardBackground,
+    borderRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    maxHeight: "80%",
+    overflow: "hidden",
+  },
+  itemDetailImage: {
+    width: "100%",
+    height: 200,
+  },
+  itemDetailScrollView: {
+    padding: 20,
+    maxHeight: 300,
+  },
+  itemDetailTitle: {
+    fontFamily: "Outfit",
+    fontSize: 24,
+    fontWeight: "600",
+    color: FIGMA_COLORS.primaryText,
+    marginBottom: 8,
+    marginTop: 15,
+    paddingHorizontal: 20,
+  },
+  itemDetailCategory: {
+    fontFamily: "Outfit",
+    fontSize: 16,
+    fontWeight: "500",
+    color: FIGMA_COLORS.accentBlue,
+    marginBottom: 15,
+    textTransform: "uppercase",
+  },
+  itemDetailDescription: {
+    fontFamily: "Outfit",
+    fontSize: 16,
+    lineHeight: 24,
+    color: FIGMA_COLORS.primaryText,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 15,
+    right: 15,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
   },
 });
 

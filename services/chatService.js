@@ -150,10 +150,79 @@ export const sendChatMessage = async (message) => {
         }
 
         console.log('chatService: 메시지 전송 성공');
-        return data.response;
+
+        // 응답 형식 확인 및 처리
+        if (data.response && typeof data.response === 'object') {
+            console.log('chatService: 서버에서 복합 응답 객체를 반환했습니다');
+            console.log('chatService: 응답 객체 키:', Object.keys(data.response));
+            // 전체 응답 객체 반환
+            return data.response;
+        } else {
+            // 기존 방식 유지
+            return data.response;
+        }
 
     } catch (error) {
         console.error('chatService: 메시지 전송 오류:', error);
+        throw error;
+    }
+};
+
+/**
+ * Function to send a message from a guest (non-logged in user) to the server
+ * @param {string} message - User input message
+ * @returns {Promise<string>} - AI response
+ */
+export const sendGuestChatMessage = async (message) => {
+    try {
+        console.log('Guest Chat API: 게스트 메시지 전송 시작', message.substring(0, 30) + (message.length > 30 ? '...' : ''));
+
+        const url = `${API_URL}/chat/guest`;
+        console.log('Guest Chat API: 요청 URL:', url);
+
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        const body = { message };
+
+        // Log request
+        await logNetworkRequest(url, 'POST', headers, body);
+
+        // API request
+        console.log('Guest Chat API: 요청 전송 중...');
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+        });
+        console.log('Guest Chat API: 응답 상태 코드:', response.status);
+
+        // Process response
+        const data = await response.json();
+
+        // Log response
+        await logNetworkResponse(url, response.status, data);
+
+        if (!response.ok) {
+            console.error('Guest Chat API 오류:', response.status, data);
+            throw new Error(`API error (${response.status}): ${data.message || 'Unknown error'}`);
+        }
+
+        console.log('Guest Chat API: 메시지 전송 성공');
+
+        // 응답 형식 확인 및 처리
+        if (data.response && typeof data.response === 'object') {
+            console.log('Guest Chat API: 서버에서 복합 응답 객체를 반환했습니다');
+            console.log('Guest Chat API: 응답 객체 키:', Object.keys(data.response));
+            // 전체 응답 객체 반환
+            return data.response;
+        } else {
+            // 기존 방식 유지
+            return data.response;
+        }
+
+    } catch (error) {
+        console.error('Guest Chat API: 메시지 전송 오류:', error);
         throw error;
     }
 }; 
