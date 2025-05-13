@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sendChatMessage, createChatSession } from "../services/chatService";
+import { sendChatMessage, createChatSession, sendGuestChatMessage } from "../services/chatService";
 import { Alert } from "react-native";
 
 // Create chat context
@@ -135,6 +135,7 @@ export const ChatProvider = ({ children }) => {
 
             try {
                 let responseText;
+                let originalResponseData = null;
 
                 // Different API calls based on login status
                 if (isLoggedIn) {
@@ -147,6 +148,96 @@ export const ChatProvider = ({ children }) => {
                     console.log('서버 응답 타입:', typeof responseText);
                     if (typeof responseText === 'object') {
                         console.log('응답 객체 키:', Object.keys(responseText));
+
+                        // 원본 응답 데이터 저장
+                        originalResponseData = { ...responseText };
+
+                        // 카테고리 확인 및 응답 데이터 저장
+                        if (responseText.category) {
+                            console.log('응답에서 category 필드 발견:', responseText.category);
+
+                            // 응답 고유 ID 생성
+                            const responseUniqueId = `response_${Date.now()}`;
+
+                            // 원본 응답 데이터 전체 저장
+                            await AsyncStorage.setItem('last_response_data', JSON.stringify(responseText));
+                            await AsyncStorage.setItem(responseUniqueId, JSON.stringify(responseText));
+                            console.log('응답 데이터 AsyncStorage에 저장 완료:', responseUniqueId);
+
+                            // contents 카테고리인 경우 별도 저장 (자동 내비게이션은 제거)
+                            if (responseText.category === 'contents' &&
+                                responseText.message &&
+                                typeof responseText.message === 'object') {
+                                console.log('컨텐츠 카테고리 응답 감지, 데이터만 저장 (자동 내비게이션 없음)');
+
+                                // 고유 ID 생성 및 저장
+                                const contentMsgId = `content_${Date.now()}`;
+                                await AsyncStorage.setItem(contentMsgId, JSON.stringify(responseText));
+                                await AsyncStorage.setItem('active_message_id', contentMsgId);
+                                console.log('컨텐츠 데이터 저장 완료:', contentMsgId);
+                            }
+                            // preparation 카테고리인 경우 별도 저장 (자동 내비게이션은 제거)
+                            else if (responseText.category === 'preparation' &&
+                                responseText.message &&
+                                typeof responseText.message === 'object') {
+                                console.log('준비물 카테고리 응답 감지, 데이터 저장 처리 시작');
+
+                                // 고유 ID 생성 및 저장
+                                const prepMsgId = `preparation_${Date.now()}`;
+                                await AsyncStorage.setItem(prepMsgId, JSON.stringify(responseText));
+
+                                // 현재 활성화된 메시지 ID로 설정
+                                await AsyncStorage.setItem('active_message_id', prepMsgId);
+
+                                // 가장 최근 준비물 데이터 키로 저장 (PrepareScreen에서 자동으로 로드하기 위함)
+                                await AsyncStorage.setItem('latest_preparation_data_key', prepMsgId);
+
+                                // 준비물 데이터 직접 저장 (PrepareScreen에서 바로 사용할 수 있도록)
+                                await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(responseText));
+
+                                // 준비물 데이터가 존재함을 알리는 플래그 설정
+                                await AsyncStorage.setItem('preparation_data_exists', 'true');
+
+                                console.log('준비물 데이터 저장 완료 - 준비물 데이터 키:', prepMsgId);
+
+                                // 데이터 저장 시간 기록 (PrepareScreen에서 새로운 데이터 여부 확인용)
+                                await AsyncStorage.setItem('preparation_data_timestamp', Date.now().toString());
+
+                                // 글로벌 이벤트 발생 알림 (PrepareScreen에서 감지하도록)
+                                if (global.dispatchPreparationDataEvent) {
+                                    console.log('준비물 데이터 이벤트 발생');
+                                    global.dispatchPreparationDataEvent(responseText);
+                                } else {
+                                    console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정');
+                                    global.preparationData = responseText;
+                                }
+                            }
+
+                            // 디버깅을 위해 message 필드 구조도 확인
+                            if (responseText.message && typeof responseText.message === 'object') {
+                                console.log('message 필드 구조:', Object.keys(responseText.message));
+
+                                // Place, F&B, Activity 키가 있는지 확인
+                                const hasPlaceData = !!responseText.message.Place;
+                                const hasFBData = !!responseText.message['F&B'];
+                                const hasActivityData = !!responseText.message.Activity;
+
+                                console.log(`message 내 데이터 확인: Place(${hasPlaceData}), F&B(${hasFBData}), Activity(${hasActivityData})`);
+                            }
+
+                            // summary 필드가 있는 경우
+                            if (responseText.summary) {
+                                console.log('응답에서 summary 필드 발견, 이를 표시합니다');
+                                // 전체 객체가 아닌 summary 텍스트만 표시
+                                const displayObject = {
+                                    summary: responseText.summary,
+                                    category: responseText.category
+                                };
+
+                                // 챗 메시지 표시용 객체로 변경 (원본은 AsyncStorage에 저장됨)
+                                responseText = displayObject;
+                            }
+                        }
                     }
 
                     // Update current session ID after response (session might be created during API call)
@@ -157,11 +248,112 @@ export const ChatProvider = ({ children }) => {
                         setCurrentSessionId(sessionId);
                     }
                 } else {
-                    console.log('비로그인 상태 - 로컬 응답 생성 중...');
+                    console.log('비로그인 상태 - 게스트 API 호출 중...');
 
-                    // Not logged in: Generate local response
-                    const response = await getLocalAIResponse(text);
-                    responseText = response.text;
+                    // Not logged in: Call guest API
+                    const guestResponse = await sendGuestChatMessage(text);
+
+                    // 원본 응답 데이터 저장
+                    originalResponseData = { ...guestResponse };
+
+                    console.log('게스트 응답 타입:', typeof guestResponse);
+                    // 게스트 응답도 로그인 응답과 동일하게 처리
+                    if (typeof guestResponse === 'object') {
+                        console.log('게스트 응답 객체 키:', Object.keys(guestResponse));
+
+                        // 카테고리 확인 및 응답 데이터 저장
+                        if (guestResponse.category) {
+                            console.log('게스트 응답에서 category 필드 발견:', guestResponse.category);
+
+                            // 응답 고유 ID 생성
+                            const responseUniqueId = `response_${Date.now()}_guest`;
+
+                            // 원본 응답 데이터 전체 저장
+                            await AsyncStorage.setItem('last_response_data', JSON.stringify(guestResponse));
+                            await AsyncStorage.setItem(responseUniqueId, JSON.stringify(guestResponse));
+                            console.log('게스트 응답 데이터 AsyncStorage에 저장 완료:', responseUniqueId);
+
+                            // contents 카테고리인 경우 별도 저장 (자동 내비게이션은 제거)
+                            if (guestResponse.category === 'contents' &&
+                                guestResponse.message &&
+                                typeof guestResponse.message === 'object') {
+                                console.log('게스트 컨텐츠 카테고리 응답 감지, 데이터만 저장 (자동 내비게이션 없음)');
+
+                                // 고유 ID 생성 및 저장
+                                const contentMsgId = `content_${Date.now()}_guest`;
+                                await AsyncStorage.setItem(contentMsgId, JSON.stringify(guestResponse));
+                                await AsyncStorage.setItem('active_message_id', contentMsgId);
+                                console.log('게스트 컨텐츠 데이터 저장 완료:', contentMsgId);
+                            }
+                            // preparation 카테고리인 경우 별도 저장 (자동 내비게이션은 제거)
+                            else if (guestResponse.category === 'preparation' &&
+                                guestResponse.message &&
+                                typeof guestResponse.message === 'object') {
+                                console.log('게스트 준비물 카테고리 응답 감지, 데이터 저장 처리 시작');
+
+                                // 고유 ID 생성 및 저장
+                                const prepMsgId = `preparation_${Date.now()}_guest`;
+                                await AsyncStorage.setItem(prepMsgId, JSON.stringify(guestResponse));
+
+                                // 현재 활성화된 메시지 ID로 설정
+                                await AsyncStorage.setItem('active_message_id', prepMsgId);
+
+                                // 가장 최근 준비물 데이터 키로 저장 (PrepareScreen에서 자동으로 로드하기 위함)
+                                await AsyncStorage.setItem('latest_preparation_data_key', prepMsgId);
+
+                                // 준비물 데이터 직접 저장 (PrepareScreen에서 바로 사용할 수 있도록)
+                                await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(guestResponse));
+
+                                // 준비물 데이터가 존재함을 알리는 플래그 설정
+                                await AsyncStorage.setItem('preparation_data_exists', 'true');
+
+                                console.log('게스트 준비물 데이터 저장 완료 - 준비물 데이터 키:', prepMsgId);
+
+                                // 데이터 저장 시간 기록 (PrepareScreen에서 새로운 데이터 여부 확인용)
+                                await AsyncStorage.setItem('preparation_data_timestamp', Date.now().toString());
+
+                                // 글로벌 이벤트 발생 알림 (PrepareScreen에서 감지하도록)
+                                if (global.dispatchPreparationDataEvent) {
+                                    console.log('준비물 데이터 이벤트 발생 (게스트)');
+                                    global.dispatchPreparationDataEvent(guestResponse);
+                                } else {
+                                    console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정 (게스트)');
+                                    global.preparationData = guestResponse;
+                                }
+                            }
+
+                            // 디버깅을 위해 message 필드 구조도 확인
+                            if (guestResponse.message && typeof guestResponse.message === 'object') {
+                                console.log('message 필드 구조:', Object.keys(guestResponse.message));
+
+                                // Place, F&B, Activity 키가 있는지 확인
+                                const hasPlaceData = !!guestResponse.message.Place;
+                                const hasFBData = !!guestResponse.message['F&B'];
+                                const hasActivityData = !!guestResponse.message.Activity;
+
+                                console.log(`message 내 데이터 확인: Place(${hasPlaceData}), F&B(${hasFBData}), Activity(${hasActivityData})`);
+                            }
+
+                            // summary 필드가 있는 경우
+                            if (guestResponse.summary) {
+                                console.log('게스트 응답에서 summary 필드 발견, 이를 표시합니다');
+                                // 전체 객체가 아닌 summary 텍스트만 표시
+                                const displayObject = {
+                                    summary: guestResponse.summary,
+                                    category: guestResponse.category
+                                };
+
+                                // 챗 메시지 표시용 객체로 변경 (원본은 AsyncStorage에 저장됨)
+                                responseText = displayObject;
+                            } else {
+                                responseText = guestResponse;
+                            }
+                        } else {
+                            responseText = guestResponse;
+                        }
+                    } else {
+                        responseText = guestResponse;
+                    }
                 }
 
                 // Create AI response message
