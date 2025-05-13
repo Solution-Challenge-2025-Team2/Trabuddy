@@ -468,30 +468,89 @@ export default function MainScreen() {
                       // 준비물 카테고리인 경우 PrepareScreen으로 이동
                       console.log('준비물 카테고리 - PrepareScreen으로 이동');
 
-                      // 준비물 데이터 별도 저장
-                      const preparationDataKey = `prep_data_${Date.now()}`;
-                      await AsyncStorage.setItem(preparationDataKey, JSON.stringify(completeData));
-                      await AsyncStorage.setItem('latest_preparation_data_key', preparationDataKey);
+                      // 이미 저장된 동일한 데이터가 있는지 확인
+                      const allKeys = await AsyncStorage.getAllKeys();
+                      const prepKeys = allKeys.filter(key => key.startsWith('prep_data_'));
+                      let existingDataKey = null;
+                      let existingData = null;
 
-                      // 직접 사용하기 위한 데이터 저장
-                      await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(completeData));
-                      await AsyncStorage.setItem('preparation_data_exists', 'true');
-                      await AsyncStorage.setItem('preparation_data_timestamp', Date.now().toString());
+                      // 데이터 찾기
+                      if (prepKeys.length > 0) {
+                        console.log(`${prepKeys.length}개의 준비물 데이터 찾음, 일치하는 데이터 검색 중...`);
 
-                      // 글로벌 이벤트 발생 알림 (PrepareScreen에서 감지하도록)
-                      if (global.dispatchPreparationDataEvent) {
-                        console.log('View More에서 준비물 데이터 이벤트 발생');
-                        global.dispatchPreparationDataEvent(completeData);
-                      } else {
-                        console.log('View More에서 전역 데이터 설정');
-                        global.preparationData = completeData;
+                        for (const key of prepKeys) {
+                          try {
+                            const storedDataStr = await AsyncStorage.getItem(key);
+                            if (storedDataStr) {
+                              const storedData = JSON.parse(storedDataStr);
+
+                              // message 필드 비교 (내용 기반 비교)
+                              if (storedData.message && completeData.message &&
+                                JSON.stringify(storedData.message) === JSON.stringify(completeData.message)) {
+                                console.log(`일치하는 데이터 찾음: ${key}`);
+                                existingDataKey = key;
+                                existingData = storedData;
+                                break;
+                              }
+
+                              // 메시지 필드가 일치하지 않는 경우 요약 내용과 카테고리로 비교
+                              if (!existingData &&
+                                storedData.summary && completeData.summary &&
+                                storedData.category === 'preparation' &&
+                                storedData.summary === completeData.summary) {
+                                console.log(`요약 내용이 일치하는 데이터 찾음: ${key}`);
+                                existingDataKey = key;
+                                existingData = storedData;
+                                break;
+                              }
+                            }
+                          } catch (e) {
+                            console.error(`${key} 데이터 파싱 실패:`, e);
+                          }
+                        }
                       }
+
+                      let dataToUse;
+                      let timestampToUse;
+
+                      if (existingData) {
+                        // 기존 데이터 사용
+                        console.log('기존 데이터 사용:', existingDataKey);
+                        dataToUse = existingData;
+                        timestampToUse = existingData.timestamp || parseInt(existingDataKey.replace('prep_data_', ''));
+                      } else {
+                        // 새 데이터 저장
+                        console.log('새 데이터 저장');
+                        const timestamp = Date.now();
+                        const preparationDataKey = `prep_data_${timestamp}`;
+
+                        // 데이터에 타임스탬프 및 식별 정보 추가
+                        const enhancedData = {
+                          ...completeData,
+                          timestamp,
+                          timestampStr: new Date(timestamp).toLocaleString(),
+                          key: preparationDataKey
+                        };
+
+                        // 향상된 데이터로 저장
+                        await AsyncStorage.setItem(preparationDataKey, JSON.stringify(enhancedData));
+                        await AsyncStorage.setItem('latest_preparation_data_key', preparationDataKey);
+                        await AsyncStorage.setItem('preparation_data_exists', 'true');
+                        await AsyncStorage.setItem('preparation_data_timestamp', timestamp.toString());
+
+                        dataToUse = enhancedData;
+                        timestampToUse = timestamp;
+                      }
+
+                      // 항상 가장 최근 데이터로 travel_essentials_data 업데이트
+                      await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(dataToUse));
 
                       // PrepareScreen으로 이동, 자동 모달 표시 플래그 추가
                       navigation.navigate('PrepareTravels', {
-                        messageData: completeData,
+                        messageData: dataToUse,
                         messageId: messageUniqueId,
-                        autoShowModal: true // 자동으로 모달 표시하기 위한 플래그
+                        autoShowModal: true, // 자동으로 모달 표시하기 위한 플래그
+                        timestamp: timestampToUse // 타임스탬프 전달
                       });
                       return;
                     }

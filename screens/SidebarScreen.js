@@ -40,7 +40,16 @@ const Sidebar = ({ navigation }) => {
   // Logout function
   const handleLogout = async () => {
     try {
+      // 로그인 토큰 삭제
       await AsyncStorage.removeItem('access_token');
+
+      // 세션 ID 삭제
+      await AsyncStorage.removeItem('current_session_id');
+
+      // 모든 저장된 데이터 지우기
+      await clearAllUserData();
+
+      // 로그인 상태 업데이트
       setIsLoggedIn(false);
 
       // Reset chat on logout
@@ -60,6 +69,61 @@ const Sidebar = ({ navigation }) => {
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Error', 'There was a problem during logout.');
+    }
+  };
+
+  // 모든 사용자 관련 데이터 삭제 함수
+  const clearAllUserData = async () => {
+    try {
+      // 필수 키 목록 (직접 삭제할 중요 키들)
+      const keysToRemove = [
+        // 로그인 및 세션 관련
+        'access_token',
+        'current_session_id',
+
+        // 채팅 데이터 관련
+        'active_message_id',
+        'last_response_data',
+
+        // 준비물 데이터 관련
+        'travel_essentials_data',
+        'travel_essentials_destination',
+        'travel_essentials_startDate',
+        'travel_essentials_endDate',
+        'latest_preparation_data_key',
+        'preparation_data_exists',
+        'preparation_data_timestamp'
+      ];
+
+      // 필수 키 삭제
+      for (const key of keysToRemove) {
+        await AsyncStorage.removeItem(key);
+      }
+
+      // 모든 키 가져오기 (동적으로 생성된 키 삭제용)
+      const allKeys = await AsyncStorage.getAllKeys();
+
+      // 특정 패턴의 키들 찾기 (message_, response_, prep_data_ 등으로 시작하는 키)
+      const dynamicKeys = allKeys.filter(key =>
+        key.startsWith('message_') ||
+        key.startsWith('response_') ||
+        key.startsWith('prep_data_') ||
+        key.startsWith('content_') ||
+        key.startsWith('preparation_')
+      );
+
+      // 로그 확인
+      console.log(`총 ${dynamicKeys.length}개의 동적 키를 삭제합니다.`);
+
+      // 동적 키들 삭제
+      if (dynamicKeys.length > 0) {
+        await AsyncStorage.multiRemove(dynamicKeys);
+      }
+
+      console.log('모든 사용자 데이터가 성공적으로 삭제되었습니다.');
+    } catch (error) {
+      console.error('데이터 삭제 중 오류:', error);
+      // 오류가 발생해도 로그아웃 프로세스는 계속 진행
     }
   };
 
