@@ -244,17 +244,17 @@ const Sidebar = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          onPress={() => navigateAndDismissKeyboard("HistoryCulture")}
+          onPress={() => navigateAndDismissKeyboard("HistoryDetail")}
           style={styles.menuItem}
         >
-          <Text style={styles.link}>History/Culture</Text>
+          <Text style={styles.link}>HistryDetails</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => navigateAndDismissKeyboard("PersonalContent")}
           style={styles.menuItem}
         >
-          <Text style={styles.link}>PersonalContent</Text>
+          <Text style={styles.link}>PersonalContents</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

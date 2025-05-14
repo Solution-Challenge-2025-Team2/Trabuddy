@@ -227,6 +227,57 @@ export const ChatProvider = ({ children }) => {
                                     global.preparationData = enhancedData;
                                 }
                             }
+                            // historical 카테고리인 경우 별도 저장
+                            else if (responseText.category === 'historical' &&
+                                responseText.message &&
+                                typeof responseText.message === 'object') {
+                                console.log('역사/문화 카테고리 응답 감지, 데이터 저장 처리 시작');
+
+                                // 타임스탬프 생성
+                                const timestamp = Date.now();
+
+                                // 기조 ID 생성 방식 유지 (메시지 ID용)
+                                const histMsgId = `historical_${timestamp}`;
+                                await AsyncStorage.setItem(histMsgId, JSON.stringify(responseText));
+
+                                // 현재 활성화된 메시지 ID로 설정
+                                await AsyncStorage.setItem('active_message_id', histMsgId);
+
+                                // HistoryDetailScreen 형식에 맞게 데이터 강화
+                                const enhancedData = {
+                                    ...responseText,
+                                    timestamp,
+                                    timestampStr: new Date(timestamp).toLocaleString(),
+                                    key: `hist_data_${timestamp}`
+                                };
+
+                                // hist_data_ 형식으로 저장 (HistoryDetailScreen에서 사용하는 형식)
+                                const histDataKey = `hist_data_${timestamp}`;
+                                await AsyncStorage.setItem(histDataKey, JSON.stringify(enhancedData));
+
+                                // 가장 최근 역사/문화 데이터 키로 저장 (HistoryDetailScreen에서 자동으로 로드하기 위함)
+                                await AsyncStorage.setItem('latest_historical_data_key', histDataKey);
+
+                                // 역사/문화 데이터 직접 저장 (HistoryDetailScreen에서 바로 사용할 수 있도록)
+                                await AsyncStorage.setItem('historical_culture_data', JSON.stringify(enhancedData));
+
+                                // 역사/문화 데이터가 존재함을 알리는 플래그 설정
+                                await AsyncStorage.setItem('historical_data_exists', 'true');
+
+                                console.log('역사/문화 데이터 저장 완료 - 역사/문화 데이터 키:', histDataKey);
+
+                                // 데이터 저장 시간 기록 (HistoryDetailScreen에서 새로운 데이터 여부 확인용)
+                                await AsyncStorage.setItem('historical_data_timestamp', timestamp.toString());
+
+                                // 글로벌 이벤트 발생 알림 (HistoryDetailScreen에서 감지하도록)
+                                if (global.dispatchHistoricalDataEvent) {
+                                    console.log('역사/문화 데이터 이벤트 발생');
+                                    global.dispatchHistoricalDataEvent(enhancedData);
+                                } else {
+                                    console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정');
+                                    global.historicalData = enhancedData;
+                                }
+                            }
 
                             // 디버깅을 위해 message 필드 구조도 확인
                             if (responseText.message && typeof responseText.message === 'object') {
@@ -349,6 +400,57 @@ export const ChatProvider = ({ children }) => {
                                 } else {
                                     console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정 (게스트)');
                                     global.preparationData = enhancedData;
+                                }
+                            }
+                            // historical 카테고리인 경우 별도 저장 (게스트 사용자)
+                            else if (guestResponse.category === 'historical' &&
+                                guestResponse.message &&
+                                typeof guestResponse.message === 'object') {
+                                console.log('게스트 역사/문화 카테고리 응답 감지, 데이터 저장 처리 시작');
+
+                                // 타임스탬프 생성
+                                const timestamp = Date.now();
+
+                                // 기존 ID 생성 방식 유지 (메시지 ID용)
+                                const histMsgId = `historical_${timestamp}_guest`;
+                                await AsyncStorage.setItem(histMsgId, JSON.stringify(guestResponse));
+
+                                // 현재 활성화된 메시지 ID로 설정
+                                await AsyncStorage.setItem('active_message_id', histMsgId);
+
+                                // HistoryDetailScreen 형식에 맞게 데이터 강화
+                                const enhancedData = {
+                                    ...guestResponse,
+                                    timestamp,
+                                    timestampStr: new Date(timestamp).toLocaleString(),
+                                    key: `hist_data_${timestamp}`
+                                };
+
+                                // hist_data_ 형식으로 저장 (HistoryDetailScreen에서 사용하는 형식)
+                                const histDataKey = `hist_data_${timestamp}`;
+                                await AsyncStorage.setItem(histDataKey, JSON.stringify(enhancedData));
+
+                                // 가장 최근 역사/문화 데이터 키로 저장 (HistoryDetailScreen에서 자동으로 로드하기 위함)
+                                await AsyncStorage.setItem('latest_historical_data_key', histDataKey);
+
+                                // 역사/문화 데이터 직접 저장 (HistoryDetailScreen에서 바로 사용할 수 있도록)
+                                await AsyncStorage.setItem('historical_culture_data', JSON.stringify(enhancedData));
+
+                                // 역사/문화 데이터가 존재함을 알리는 플래그 설정
+                                await AsyncStorage.setItem('historical_data_exists', 'true');
+
+                                console.log('게스트 역사/문화 데이터 저장 완료 - 역사/문화 데이터 키:', histDataKey);
+
+                                // 데이터 저장 시간 기록 (HistoryDetailScreen에서 새로운 데이터 여부 확인용)
+                                await AsyncStorage.setItem('historical_data_timestamp', timestamp.toString());
+
+                                // 글로벌 이벤트 발생 알림 (HistoryDetailScreen에서 감지하도록)
+                                if (global.dispatchHistoricalDataEvent) {
+                                    console.log('역사/문화 데이터 이벤트 발생 (게스트)');
+                                    global.dispatchHistoricalDataEvent(enhancedData);
+                                } else {
+                                    console.log('이벤트 디스패처가 정의되지 않음, 이벤트 핸들러 설정 (게스트)');
+                                    global.historicalData = enhancedData;
                                 }
                             }
 
