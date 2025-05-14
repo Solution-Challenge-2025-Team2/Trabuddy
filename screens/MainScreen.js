@@ -320,7 +320,7 @@ export default function MainScreen() {
           </View>
 
           {/* View More Details 버튼 - 메시지 버블 아래에 별도로 위치 */}
-          {!message.isUser && !message.isError && (
+          {!message.isUser && !message.isError && !message.fromSavedSession && (
             <TouchableOpacity
               style={styles.viewMoreButton}
               onPress={() => {

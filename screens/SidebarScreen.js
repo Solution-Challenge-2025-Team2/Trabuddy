@@ -93,6 +93,12 @@ const Sidebar = ({ navigation }) => {
         "latest_preparation_data_key",
         "preparation_data_exists",
         "preparation_data_timestamp",
+
+        // 역사/문화 데이터 관련
+        "historical_culture_data",
+        "historical_data_exists",
+        "historical_data_timestamp",
+        "latest_historical_data_key"
       ];
 
       // 필수 키 삭제
@@ -110,7 +116,9 @@ const Sidebar = ({ navigation }) => {
           key.startsWith("response_") ||
           key.startsWith("prep_data_") ||
           key.startsWith("content_") ||
-          key.startsWith("preparation_")
+          key.startsWith("preparation_") ||
+          key.startsWith("hist_data_") ||
+          key.startsWith("historical_")
       );
 
       // 로그 확인
@@ -125,6 +133,66 @@ const Sidebar = ({ navigation }) => {
     } catch (error) {
       console.error("데이터 삭제 중 오류:", error);
       // 오류가 발생해도 로그아웃 프로세스는 계속 진행
+    }
+  };
+
+  // 채팅 및 콘텐츠 데이터만 삭제하는 함수 (로그인 유지)
+  const clearChatData = async () => {
+    try {
+      // 필수 키 목록 (직접 삭제할 키들 - 로그인 정보 제외)
+      const keysToRemove = [
+        // 채팅 데이터 관련
+        "active_message_id",
+        "last_response_data",
+
+        // 준비물 데이터 관련
+        "travel_essentials_data",
+        "travel_essentials_destination",
+        "travel_essentials_startDate",
+        "travel_essentials_endDate",
+        "latest_preparation_data_key",
+        "preparation_data_exists",
+        "preparation_data_timestamp",
+
+        // 역사/문화 데이터 관련
+        "historical_culture_data",
+        "historical_data_exists",
+        "historical_data_timestamp",
+        "latest_historical_data_key"
+      ];
+
+      // 필수 키 삭제
+      for (const key of keysToRemove) {
+        await AsyncStorage.removeItem(key);
+      }
+
+      // 모든 키 가져오기 (동적으로 생성된 키 삭제용)
+      const allKeys = await AsyncStorage.getAllKeys();
+
+      // 특정 패턴의 키들 찾기 (message_, response_, prep_data_ 등으로 시작하는 키)
+      const dynamicKeys = allKeys.filter(
+        (key) =>
+          key.startsWith("message_") ||
+          key.startsWith("response_") ||
+          key.startsWith("prep_data_") ||
+          key.startsWith("content_") ||
+          key.startsWith("preparation_") ||
+          key.startsWith("hist_data_") ||
+          key.startsWith("historical_")
+      );
+
+      // 로그 확인
+      console.log(`총 ${dynamicKeys.length}개의 채팅 관련 키를 삭제합니다.`);
+
+      // 동적 키들 삭제
+      if (dynamicKeys.length > 0) {
+        await AsyncStorage.multiRemove(dynamicKeys);
+      }
+
+      console.log("모든 채팅 데이터가 성공적으로 삭제되었습니다.");
+    } catch (error) {
+      console.error("채팅 데이터 삭제 중 오류:", error);
+      throw error;
     }
   };
 
@@ -149,31 +217,39 @@ const Sidebar = ({ navigation }) => {
   };
 
   // Navigation function with chat reset
-  const handleResetChatAndNavigate = () => {
+  const handleResetChatAndNavigate = async () => {
     Keyboard.dismiss(); // Dismiss keyboard
 
-    // Reset chat - also creates new session
-    resetChat();
+    try {
+      // 채팅 관련 데이터만 지우기 (로그인 상태 유지)
+      await clearChatData();
 
-    // Stop TTS if running
-    if (Speech && Speech.stop) {
-      Speech.stop();
-    }
+      // Reset chat - also creates new session
+      resetChat();
 
-    // Navigate after keyboard is dismissed
-    setTimeout(() => {
-      navigation.navigate("Main");
+      // Stop TTS if running
+      if (Speech && Speech.stop) {
+        Speech.stop();
+      }
 
-      // New chat alert
+      // Navigate after keyboard is dismissed
       setTimeout(() => {
-        Alert.alert(
-          "New Chat",
-          "Starting a new chat session.",
-          [{ text: "OK" }],
-          { cancelable: true }
-        );
-      }, 300);
-    }, 50); // 50ms delay
+        navigation.navigate("Main");
+
+        // New chat alert
+        setTimeout(() => {
+          Alert.alert(
+            "New Chat",
+            "Starting a new chat session.",
+            [{ text: "OK" }],
+            { cancelable: true }
+          );
+        }, 300);
+      }, 50); // 50ms delay
+    } catch (error) {
+      console.error("New chat reset error:", error);
+      Alert.alert("Error", "There was a problem starting a new chat.");
+    }
   };
 
   // User info component to display after login
@@ -247,7 +323,7 @@ const Sidebar = ({ navigation }) => {
           onPress={() => navigateAndDismissKeyboard("HistoryDetail")}
           style={styles.menuItem}
         >
-          <Text style={styles.link}>HistryDetails</Text>
+          <Text style={styles.link}>HistoryDetails</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

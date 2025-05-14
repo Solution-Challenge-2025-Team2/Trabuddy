@@ -225,82 +225,46 @@ export default function PersonalContentScreen() {
 
         console.log('데이터 소스:', dataSource);
 
-        // 테스트 데이터 삽입 (디버깅용, 실제 데이터가 없을 때만 사용)
+        // 데이터가 없을 경우 null로 설정하고 종료
         if (!parsedData) {
-          console.log('데이터를 찾을 수 없어 테스트 데이터를 사용합니다');
-          parsedData = {
-            category: "contents",
-            message: {
-              "Place": [
-                {
-                  "name": "에펠탑",
-                  "information": "파리의 상징적인 랜드마크로, 밤에는 아름다운 야경을 감상할 수 있습니다.",
-                  "imageurl": "https://images.pexels.com/photos/532826/pexels-photo-532826.jpeg?auto=compress&cs=tinysrgb&h=350"
-                },
-                {
-                  "name": "루브르 박물관",
-                  "information": "세계적으로 유명한 미술관으로, 모나리자를 비롯한 수많은 걸작들을 소장하고 있습니다.",
-                  "imageurl": "https://images.pexels.com/photos/2363/france-landmark-lights-night.jpg?auto=compress&cs=tinysrgb&h=350"
-                }
-              ],
-              "F&B": [
-                {
-                  "name": "Le Jules Verne",
-                  "information": "에펠탑에 위치한 고급 레스토랑으로, 훌륭한 식사와 파리의 아름다운 전망을 동시에 즐길 수 있습니다.",
-                  "imageurl": "https://images.pexels.com/photos/1446616/pexels-photo-1446616.jpeg?auto=compress&cs=tinysrgb&h=350"
-                }
-              ],
-              "Activity": [
-                {
-                  "name": "센 강 유람선 관광",
-                  "information": "센 강을 따라 유람선을 타고 파리의 아름다운 풍경을 감상할 수 있습니다.",
-                  "imageurl": "https://images.pexels.com/photos/17856787/pexels-photo-17856787.jpeg?auto=compress&cs=tinysrgb&h=350"
-                }
-              ]
-            },
-            "summary": "파리 여행 계획을 도와드리겠습니다!"
-          };
-          dataSource = '테스트 데이터';
+          console.log('저장된 응답 데이터가 없습니다');
+          setContentData(null);
+          return;
         }
 
         // 로그에 전체 데이터 구조 출력 (디버깅용)
-        if (parsedData) {
-          console.log('가져온 데이터 키:', Object.keys(parsedData));
-          try {
-            console.log('가져온 데이터 유형:', typeof parsedData);
-            if (typeof parsedData === 'object') {
-              console.log('가져온 데이터 일부:', JSON.stringify(parsedData).substring(0, 200) + '...');
-            }
-          } catch (e) {
-            console.log('데이터 직렬화 오류:', e.message);
+        console.log('가져온 데이터 키:', Object.keys(parsedData));
+        try {
+          console.log('가져온 데이터 유형:', typeof parsedData);
+          if (typeof parsedData === 'object') {
+            console.log('가져온 데이터 일부:', JSON.stringify(parsedData).substring(0, 200) + '...');
           }
+        } catch (e) {
+          console.log('데이터 직렬화 오류:', e.message);
+        }
 
-          // 새 함수를 사용하여 컨텐츠 데이터 찾기
-          const contents = findContentData(parsedData);
+        // 새 함수를 사용하여 컨텐츠 데이터 찾기
+        const contents = findContentData(parsedData);
 
-          // 데이터 설정
-          if (contents) {
-            console.log('컨텐츠 데이터 발견, 설정 시작');
-            setContentData(contents);
-            console.log('컨텐츠 데이터 설정 완료');
+        // 데이터 설정
+        if (contents) {
+          console.log('컨텐츠 데이터 발견, 설정 시작');
+          setContentData(contents);
+          console.log('컨텐츠 데이터 설정 완료');
 
-            // 데이터 미리보기 로깅
-            const place = contents.place || [];
-            const fnb = contents["f&b"] || [];
-            const activity = contents.activity || [];
+          // 데이터 미리보기 로깅
+          const place = contents.place || [];
+          const fnb = contents["f&b"] || [];
+          const activity = contents.activity || [];
 
-            console.log(`데이터 항목 개수: place(${place.length}), f&b(${fnb.length}), activity(${activity.length})`);
+          console.log(`데이터 항목 개수: place(${place.length}), f&b(${fnb.length}), activity(${activity.length})`);
 
-            // 각 카테고리별 첫 항목 로깅 (있을 경우)
-            if (place.length > 0) console.log('첫 장소 항목:', JSON.stringify(place[0]));
-            if (fnb.length > 0) console.log('첫 F&B 항목:', JSON.stringify(fnb[0]));
-            if (activity.length > 0) console.log('첫 활동 항목:', JSON.stringify(activity[0]));
-          } else {
-            console.log('컨텐츠 데이터를 찾을 수 없습니다');
-            setContentData(null);
-          }
+          // 각 카테고리별 첫 항목 로깅 (있을 경우)
+          if (place.length > 0) console.log('첫 장소 항목:', JSON.stringify(place[0]));
+          if (fnb.length > 0) console.log('첫 F&B 항목:', JSON.stringify(fnb[0]));
+          if (activity.length > 0) console.log('첫 활동 항목:', JSON.stringify(activity[0]));
         } else {
-          console.log('저장된 응답 데이터가 없습니다');
+          console.log('컨텐츠 데이터를 찾을 수 없습니다');
           setContentData(null);
         }
       } catch (error) {
@@ -427,13 +391,13 @@ export default function PersonalContentScreen() {
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={FIGMA_COLORS.tabSelectedBg} />
-                <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
+                <Text style={styles.loadingText}>Loading data...</Text>
               </View>
             ) : !contentData ? (
               <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>표시할 데이터가 없습니다.</Text>
+                <Text style={styles.noDataText}>No data to display.</Text>
                 <Text style={styles.noDataSubText}>
-                  채팅에서 "View more details" 버튼을 클릭하여 데이터를 확인하세요.
+                  Click "View more details" button in chat to see data.
                 </Text>
               </View>
             ) : selectedTab === "All" ? (
