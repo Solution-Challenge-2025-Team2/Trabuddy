@@ -1,0 +1,222 @@
+{
+  "NP": {
+    "police": ["100", "103"],
+    "fire": ["101"],
+    "ambulance": ["102"]
+  },
+  "KR": {
+    "police": ["112"],
+    "fire": ["119"],
+    "ambulance": ["119"]
+  },
+  "TL": {
+    "police": ["112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "LA": {
+    "police": ["191"],
+    "fire": ["190"],
+    "ambulance": ["195"]
+  },
+  "LB": {
+    "police": ["112", "999"],
+    "fire": ["140"],
+    "ambulance": ["175"]
+  },
+  "HK": {
+    "police": ["999", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "MO": {
+    "police": ["999", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "MY": {
+    "police": ["999", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "MV": {
+    "police": ["102"],
+    "fire": [],
+    "ambulance": []
+  },
+  "MN": {
+    "police": ["102"],
+    "fire": ["101"],
+    "ambulance": ["103"]
+  },
+  "MM": {
+    "police": ["191"],
+    "fire": [],
+    "ambulance": []
+  },
+  "BH": {
+    "police": ["999", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "BD": {
+    "police": ["999", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "BN": {
+    "police": ["993"],
+    "fire": ["995"],
+    "ambulance": ["991"]
+  },
+  "VN": {
+    "police": ["113"],
+    "fire": ["199"],
+    "ambulance": ["115", "114"]
+  },
+  "SA": {
+    "police": ["999"],
+    "fire": ["998"],
+    "ambulance": ["997"]
+  },
+  "LK": {
+    "police": ["119", "118"],
+    "fire": ["111"],
+    "ambulance": ["110"]
+  },
+  "SY": {
+    "police": ["112"],
+    "fire": ["113"],
+    "ambulance": ["110"]
+  },
+  "SG": {
+    "police": ["999"],
+    "fire": [],
+    "ambulance": ["995", "999"]
+  },
+  "AE": {
+    "police": ["999", "112"],
+    "fire": [],
+    "ambulance": ["998", "997", "999", "112"]
+  },
+  "TR": {
+    "police": ["112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "AM": {
+    "police": ["911", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "AZ": {
+    "police": ["102"],
+    "fire": ["101"],
+    "ambulance": ["103"]
+  },
+  "AF": {
+    "police": ["119"],
+    "fire": ["119"],
+    "ambulance": ["102"]
+  },
+  "OM": {
+    "police": ["9999"],
+    "fire": [],
+    "ambulance": []
+  },
+  "JO": {
+    "police": ["911", "112"],
+    "fire": [],
+    "ambulance": []
+  },
+  "UZ": {
+    "police": ["102", "112"],
+    "fire": ["101", "112"],
+    "ambulance": ["103", "112"]
+  },
+  "IR": {
+    "police": ["110"],
+    "fire": ["125"],
+    "ambulance": ["115"]
+  },
+  "IL": {
+    "police": ["100"],
+    "fire": ["102"],
+    "ambulance": ["101"]
+  },
+  "IN": {
+    "police": ["100"],
+    "fire": ["101"],
+    "ambulance": ["102", "108", "112"]
+  },
+  "ID": {
+    "police": ["110"],
+    "fire": ["113"],
+    "ambulance": ["118", "119"]
+  },
+  "JP": {
+    "police": ["110"],
+    "fire": ["119"],
+    "ambulance": ["119"]
+  },
+  "KP": {
+    "police": ["110"],
+    "fire": ["8119"],
+    "ambulance": []
+  },
+  "TW": {
+    "police": ["110"],
+    "fire": ["119"],
+    "ambulance": ["119"]
+  },
+  "CN": {
+    "police": ["110"],
+    "fire": ["119", "120"],
+    "ambulance": ["120"]
+  },
+  "KZ": {
+    "police": ["102"],
+    "fire": ["101"],
+    "ambulance": ["103"]
+  },
+  "KG": {
+    "police": ["102"],
+    "fire": ["101"],
+    "ambulance": ["103"]
+  },
+  "QA": {
+    "police": ["112", "999"],
+    "fire": ["999", "112"],
+    "ambulance": ["999", "112"]
+  },
+  "KH": {
+    "police": ["117"],
+    "fire": [],
+    "ambulance": []
+  },
+  "KW": {
+    "police": ["112", "999"],
+    "fire": [],
+    "ambulance": []
+  },
+  "TH": {
+    "police": ["191"],
+    "fire": ["199"],
+    "ambulance": ["1669"]
+  },
+  "TJ": {
+    "police": ["102"],
+    "fire": ["101"],
+    "ambulance": ["103"]
+  },
+  "PK": {
+    "police": ["15"],
+    "fire": ["16"],
+    "ambulance": ["115", "1122", "1020", "1021", "1090"]
+  },
+  "PH": {
+    "police": ["117"],
+    "fire": [],
+    "ambulance": []
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,25 +8,60 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Frame from "../Frame";
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { problemDescriptions } from "../data/ProblemDescriptions";
 import * as Speech from "expo-speech";
+import sos from "../data/SosNum.json";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.95;
+const countryCode = "BH"; // 국가 코드 (예: "KR" 또는 "US")
 
-// TTS 기능 추가
-const speak = (text) => {
-  Speech.stop();
-  Speech.speak(text, {
-    language: "en-US",
-    rate: 0.9,
-    pitch: 1.0,
-  });
-};
+const PROBLEM_DATA = [
+  {
+    id: "1",
+    title: "Lost Items",
+    description: problemDescriptions.lost,
+    icon: require("../assets/figma_images/problem_icon_lost.png"),
+    expanded: false,
+  },
+  {
+    id: "2",
+    title: "Emergency",
+    description: {
+      id: "emergency",
+      title: "🚨 Emergency Numbers",
+      numbers: [
+        "👮 police: ",
+        sos[countryCode].police,
+        "🚒 fire: ",
+        sos[countryCode].fire,
+        "🚑 ambulance: ",
+        sos[countryCode].ambulance,
+      ],
+    },
+    icon: require("../assets/figma_images/problem_icon_emergency.png"),
+    expanded: false,
+  },
+  {
+    id: "3",
+    title: "natural disaster",
+    description: problemDescriptions.naturalDisaster,
+    icon: require("../assets/figma_images/problem_icon_naturalDisaster.png"),
+    expanded: false,
+  },
+  {
+    id: "4",
+    title: "Drug",
+    description: problemDescriptions.drug,
+    icon: require("../assets/figma_images/problem_icon_drug.png"),
+    expanded: false,
+  },
+];
 
 // 피그마에서 가져온 색상
 const FIGMA_COLORS = {
@@ -41,41 +76,93 @@ const FIGMA_COLORS = {
   white: "#FFFFFF",
 };
 
-// 문제 데이터 - 모든 카드를 그라데이션으로 통일
-const PROBLEM_DATA = [
-  {
-    id: "1",
-    title: "Lost Items",
-    description: problemDescriptions.lost,
-    icon: require("../assets/figma_images/lost_icon.png"),
-    expanded: false,
-  },
-  {
-    id: "2",
-    title: "Emergency",
-    description:
-      "In case of emergency, please call local emergency services (119) or contact the nearest hospital. For international assistance, contact your embassy.",
-    icon: require("../assets/figma_images/emergency_icon.png"),
-    expanded: false,
-  },
-  {
-    id: "3",
-    title: "Problem #1",
-    description: "Description and solution for problem #1...",
-    icon: require("../assets/figma_images/problem1_icon.png"),
-    expanded: false,
-  },
-  {
-    id: "4",
-    title: "Problem #2",
-    description: "Description and solution for problem #2...",
-    icon: require("../assets/figma_images/problem2_icon.png"),
-    expanded: false,
-  },
-];
+// 국가 코드에 따라 긴급 전화번호를 정렬 함수
+function EmergencyNumbersRow({ numbers, onPressNumber }) {
+  return (
+    <View
+      style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}
+    >
+      {numbers.map((num, idx) => (
+        <React.Fragment key={idx}>
+          <TouchableOpacity
+            onPress={() => onPressNumber(num)}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
+            <Text style={styles.cardDescription}>{num}</Text>
+            <MaterialIcons name="phone" size={16} color="#40ABE5" />
+          </TouchableOpacity>
+          {idx < numbers.length - 1 && (
+            <Text style={styles.cardDescription}>,&nbsp;</Text>
+          )}
+        </React.Fragment>
+      ))}
+    </View>
+  );
+}
 
 export default function EmergencyScreen() {
+  useEffect(() => {
+    // 문제 데이터 - 모든 카드를 그라데이션으로 통일
+    const PROBLEM_DATA = [
+      {
+        id: "1",
+        title: "Lost Items",
+        description: problemDescriptions.lost,
+        icon: require("../assets/figma_images/problem_icon_lost.png"),
+        expanded: false,
+      },
+      {
+        id: "2",
+        title: "Emergency",
+        description: {
+          id: "emergency",
+          title: "🚨 Emergency Numbers",
+          numbers: [
+            "👮 police: ",
+            sos[countryCode].police,
+            "🚒 fire: ",
+            sos[countryCode].fire,
+            "🚑 ambulance: ",
+            sos[countryCode].ambulance,
+          ],
+        },
+        icon: require("../assets/figma_images/problem_icon_emergency.png"),
+        expanded: false,
+      },
+      {
+        id: "3",
+        title: "Alert Messages",
+        description: "",
+        icon: require("../assets/figma_images/problem_icon_alert.png"),
+        expanded: false,
+      },
+      {
+        id: "4",
+        title: "Drug",
+        description: problemDescriptions.drug,
+        icon: require("../assets/figma_images/problem_icon_drug.png"),
+        expanded: false,
+      },
+    ];
+  }, [countryCode]);
   const [problems, setProblems] = useState(PROBLEM_DATA);
+  const [speaking, setSpeaking] = useState("");
+
+  const [countryCode, setCountryCode] = useState("BH"); // 국가 코드 상태 추가
+
+  // 전화 걸기 함수
+  const callNumber = (num) => {
+    const url = `tel:${num}`;
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          console.warn("Cannot open dialer for", num);
+        }
+      })
+      .catch((err) => console.error("An error occurred", err));
+  };
 
   const toggleExpand = (id) => {
     setProblems(
@@ -85,6 +172,23 @@ export default function EmergencyScreen() {
           : problem
       )
     );
+  };
+  // TTS 기능 추가
+  const speak = (text) => {
+    if (speaking === text) {
+      // 이미 같은 텍스트를 읽고 있다면 중지
+      Speech.stop();
+      setSpeaking("");
+    } else {
+      // 다른 텍스트 읽고 있다면
+      Speech.stop(); // 현재 읽고 있는 텍스트 중지
+      Speech.speak(text, {
+        language: "en-US",
+        rate: 0.9,
+        pitch: 1.0,
+      });
+      setSpeaking(text); // 현재 읽고 있는 텍스트 저장
+    }
   };
 
   return (
@@ -159,19 +263,50 @@ export default function EmergencyScreen() {
                     {/* 해결책 영역 (확장됐을 때만 표시) */}
                     {problem.expanded && (
                       <View style={styles.solutionSection}>
-                        {problem.id === "1" ? (
+                        {problem.id === "2" ? (
+                          // Emergency 카드 전용 렌더링 (speak 제거)
+                          <View>
+                            {/* 카드 제목 */}
+                            <Text style={styles.cardSubtitle}>
+                              {problem.description.title}
+                            </Text>
+
+                            {/* police 번호 */}
+                            <Text style={styles.cardDescription}>
+                              👮 police:
+                            </Text>
+                            <EmergencyNumbersRow
+                              numbers={sos[countryCode].police}
+                              onPressNumber={callNumber}
+                            />
+
+                            {/* fire 번호 */}
+                            <Text style={styles.cardDescription}>🚒 fire:</Text>
+                            <EmergencyNumbersRow
+                              numbers={sos[countryCode].fire}
+                              onPressNumber={callNumber}
+                            />
+
+                            {/* ambulance 번호 */}
+                            <Text style={styles.cardDescription}>
+                              🚑 ambulance:
+                            </Text>
+                            <EmergencyNumbersRow
+                              numbers={sos[countryCode].ambulance}
+                              onPressNumber={callNumber}
+                            />
+                          </View>
+                        ) : problem.id === "1" || problem.id === "4" ? (
+                          // Lost Items (1) / Drug (4) 기존 로직
                           problem.description.map((item) => (
                             <View key={item.id} style={styles.problemGroup}>
-                              {/* 제목 */}
                               <Text style={styles.cardSubtitle}>
                                 {item.title}
                               </Text>
-
-                              {/* 단계별 안내 (steps) */}
-                              {item.steps.map((step, index) => (
+                              {item.steps.map((step, i) => (
                                 <View
-                                  key={`step-${index}`}
-                                  style={styles.descriptionRow}
+                                  key={`step-${i}`}
+                                  style={styles.descriptionColumn}
                                 >
                                   <Text style={styles.cardDescription}>
                                     {step}
@@ -185,12 +320,10 @@ export default function EmergencyScreen() {
                                   </TouchableOpacity>
                                 </View>
                               ))}
-
-                              {/* 유의사항/팁 (tips) */}
-                              {item.tips.map((tip, index) => (
+                              {item.tips.map((tip, i) => (
                                 <View
-                                  key={`tip-${index}`}
-                                  style={styles.descriptionRow}
+                                  key={`tip-${i}`}
+                                  style={styles.descriptionColumn}
                                 >
                                   <Text style={styles.cardDescription}>
                                     {tip}
@@ -207,20 +340,54 @@ export default function EmergencyScreen() {
                             </View>
                           ))
                         ) : (
-                          <View style={styles.descriptionRow}>
-                            <Text style={styles.cardDescription}>
-                              {problem.description}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={() => speak(problem.description)}
-                            >
-                              <MaterialIcons
-                                name="volume-up"
-                                size={20}
-                                color="#40ABE5"
-                              />
-                            </TouchableOpacity>
-                          </View>
+                          // Natural Disaster (3) 등 나머지
+                          problem.description.map((item) => (
+                            <View key={item.id} style={styles.problemGroup}>
+                              {item.id === "title" ? (
+                                <Text style={styles.cardTitle}>
+                                  {item.title}
+                                </Text>
+                              ) : (
+                                <Text style={styles.cardSubtitle}>
+                                  {item.title}
+                                </Text>
+                              )}
+                              {item.info.map((info, i) => (
+                                <View
+                                  key={`info-${i}`}
+                                  style={styles.descriptionColumn}
+                                >
+                                  <Text style={styles.cardDescription}>
+                                    {info}
+                                  </Text>
+                                  <TouchableOpacity onPress={() => speak(info)}>
+                                    <MaterialIcons
+                                      name="volume-up"
+                                      size={20}
+                                      color="#40ABE5"
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                              {item.steps.map((step, i) => (
+                                <View
+                                  key={`step-${i}`}
+                                  style={styles.descriptionColumn}
+                                >
+                                  <Text style={styles.cardDescription}>
+                                    {step}
+                                  </Text>
+                                  <TouchableOpacity onPress={() => speak(step)}>
+                                    <MaterialIcons
+                                      name="volume-up"
+                                      size={20}
+                                      color="#40ABE5"
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                            </View>
+                          ))
                         )}
                       </View>
                     )}
@@ -329,15 +496,27 @@ const styles = StyleSheet.create({
     color: FIGMA_COLORS.primaryText,
     lineHeight: 24,
   },
+  cardTitle: {
+    fontFamily: "Outfit",
+    fontSize: 22,
+    color: FIGMA_COLORS.primaryText,
+    marginBottom: 10,
+  },
   cardSubtitle: {
     fontFamily: "Outfit",
     fontSize: 20,
     color: FIGMA_COLORS.primaryText,
     marginBottom: 10,
   },
-  descriptionRow: {
+  descriptionColumn: {
     flexDirection: "column",
     alignItems: "flex-end",
+    gap: 6,
+    marginBottom: 8,
+  },
+  descriptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginBottom: 8,
   },
