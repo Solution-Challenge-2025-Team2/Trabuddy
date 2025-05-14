@@ -866,15 +866,17 @@ export default function PrepareScreen({ navigation, route }) {
       const token = await AsyncStorage.getItem('access_token');
       let response;
 
-      if (token) {
-        // 로그인한 사용자 API 호출
-        console.log('로그인 사용자로 준비물 요청');
-        response = await sendChatMessage(message);
-      } else {
-        // 비로그인 사용자 API 호출
-        console.log('게스트 사용자로 준비물 요청');
-        response = await sendGuestChatMessage(message);
-      }
+      // if (token) {
+      //   // 로그인한 사용자 API 호출
+      //   console.log('로그인 사용자로 준비물 요청');
+      //   response = await sendChatMessage(message);
+      // } else {
+      //   // 비로그인 사용자 API 호출
+      //   console.log('게스트 사용자로 준비물 요청');
+      //   response = await sendGuestChatMessage(message);
+      // }
+      console.log('prepare page에서 준비물 요청');
+      response = await sendGuestChatMessage(message);
 
       console.log('준비물 API 응답:', response);
 
