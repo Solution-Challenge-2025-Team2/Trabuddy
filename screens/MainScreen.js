@@ -571,9 +571,183 @@ export default function MainScreen() {
                     const effectiveCategory =
                       completeData.category || responseCategory;
                     if (effectiveCategory === "historical") {
-                      targetScreen = "HistoryDetail";
+                      // 역사/문화 카테고리인 경우 HistoryDetail 화면으로 이동
+                      console.log('역사/문화 카테고리 - HistoryDetail로 이동');
+
+                      // 이미 저장된 동일한 데이터가 있는지 확인
+                      const allKeys = await AsyncStorage.getAllKeys();
+                      const histKeys = allKeys.filter(key => key.startsWith('hist_data_'));
+                      let existingDataKey = null;
+                      let existingData = null;
+
+                      // 데이터 찾기
+                      if (histKeys.length > 0) {
+                        console.log(`${histKeys.length}개의 역사/문화 데이터 찾음, 일치하는 데이터 검색 중...`);
+
+                        for (const key of histKeys) {
+                          try {
+                            const storedDataStr = await AsyncStorage.getItem(key);
+                            if (storedDataStr) {
+                              const storedData = JSON.parse(storedDataStr);
+
+                              // message 필드 비교 (내용 기반 비교)
+                              if (storedData.message && completeData.message &&
+                                JSON.stringify(storedData.message) === JSON.stringify(completeData.message)) {
+                                console.log(`일치하는 데이터 찾음: ${key}`);
+                                existingDataKey = key;
+                                existingData = storedData;
+                                break;
+                              }
+
+                              // 메시지 필드가 일치하지 않는 경우 요약 내용과 카테고리로 비교
+                              if (!existingData &&
+                                storedData.summary && completeData.summary &&
+                                storedData.category === 'historical' &&
+                                storedData.summary === completeData.summary) {
+                                console.log(`요약 내용이 일치하는 데이터 찾음: ${key}`);
+                                existingDataKey = key;
+                                existingData = storedData;
+                                break;
+                              }
+                            }
+                          } catch (e) {
+                            console.error(`${key} 데이터 파싱 실패:`, e);
+                          }
+                        }
+                      }
+
+                      let dataToUse;
+                      let timestampToUse;
+
+                      if (existingData) {
+                        // 기존 데이터 사용
+                        console.log('기존 데이터 사용:', existingDataKey);
+                        dataToUse = existingData;
+                        timestampToUse = existingData.timestamp || parseInt(existingDataKey.replace('hist_data_', ''));
+                      } else {
+                        // 새 데이터 저장
+                        console.log('새 데이터 저장');
+                        const timestamp = Date.now();
+                        const historicalDataKey = `hist_data_${timestamp}`;
+
+                        // 데이터에 타임스탬프 및 식별 정보 추가
+                        const enhancedData = {
+                          ...completeData,
+                          timestamp,
+                          timestampStr: new Date(timestamp).toLocaleString(),
+                          key: historicalDataKey
+                        };
+
+                        // 향상된 데이터로 저장
+                        await AsyncStorage.setItem(historicalDataKey, JSON.stringify(enhancedData));
+                        await AsyncStorage.setItem('latest_historical_data_key', historicalDataKey);
+                        await AsyncStorage.setItem('historical_data_exists', 'true');
+                        await AsyncStorage.setItem('historical_data_timestamp', timestamp.toString());
+
+                        dataToUse = enhancedData;
+                        timestampToUse = timestamp;
+                      }
+
+                      // 항상 가장 최근 데이터로 historical_culture_data 업데이트
+                      await AsyncStorage.setItem('historical_culture_data', JSON.stringify(dataToUse));
+
+                      // HistoryDetail 화면으로 이동, 자동 모달 표시 플래그 추가
+                      navigation.navigate('HistoryDetail', {
+                        messageData: dataToUse,
+                        messageId: messageUniqueId,
+                        autoShowModal: true, // 자동으로 모달 표시하기 위한 플래그
+                        timestamp: timestampToUse // 타임스탬프 전달
+                      });
+                      return;
                     } else if (effectiveCategory === "contents") {
-                      targetScreen = "PersonalContent";
+                      // 컨텐츠 카테고리인 경우 PersonalContent로 이동
+                      console.log("컨텐츠 카테고리 - PersonalContent로 이동");
+
+                      // 이미 저장된 동일한 데이터가 있는지 확인
+                      const allKeys = await AsyncStorage.getAllKeys();
+                      const contentKeys = allKeys.filter(key => key.startsWith('content_data_'));
+                      let existingContentDataKey = null;
+                      let existingContentData = null;
+
+                      // 데이터 찾기
+                      if (contentKeys.length > 0) {
+                        console.log(`${contentKeys.length}개의 컨텐츠 데이터 찾음, 일치하는 데이터 검색 중...`);
+
+                        for (const key of contentKeys) {
+                          try {
+                            const storedDataStr = await AsyncStorage.getItem(key);
+                            if (storedDataStr) {
+                              const storedData = JSON.parse(storedDataStr);
+
+                              // message 필드 비교 (내용 기반 비교)
+                              if (storedData.message && completeData.message &&
+                                JSON.stringify(storedData.message) === JSON.stringify(completeData.message)) {
+                                console.log(`일치하는 데이터 찾음: ${key}`);
+                                existingContentDataKey = key;
+                                existingContentData = storedData;
+                                break;
+                              }
+
+                              // 메시지 필드가 일치하지 않는 경우 요약 내용과 카테고리로 비교
+                              if (!existingContentData &&
+                                storedData.summary && completeData.summary &&
+                                storedData.category === 'contents' &&
+                                storedData.summary === completeData.summary) {
+                                console.log(`요약 내용이 일치하는 데이터 찾음: ${key}`);
+                                existingContentDataKey = key;
+                                existingContentData = storedData;
+                                break;
+                              }
+                            }
+                          } catch (e) {
+                            console.error(`${key} 데이터 파싱 실패:`, e);
+                          }
+                        }
+                      }
+
+                      let contentDataToUse;
+                      let contentTimestampToUse;
+
+                      if (existingContentData) {
+                        // 기존 데이터 사용
+                        console.log('기존 데이터 사용:', existingContentDataKey);
+                        contentDataToUse = existingContentData;
+                        contentTimestampToUse = existingContentData.timestamp || parseInt(existingContentDataKey.replace('content_data_', ''));
+                      } else {
+                        // 새 데이터 저장
+                        console.log('새 데이터 저장');
+                        const timestamp = Date.now();
+                        const contentDataKey = `content_data_${timestamp}`;
+
+                        // 데이터에 타임스탬프 및 식별 정보 추가
+                        const enhancedContentData = {
+                          ...completeData,
+                          timestamp,
+                          timestampStr: new Date(timestamp).toLocaleString(),
+                          key: contentDataKey
+                        };
+
+                        // 향상된 데이터로 저장
+                        await AsyncStorage.setItem(contentDataKey, JSON.stringify(enhancedContentData));
+                        await AsyncStorage.setItem('latest_content_data_key', contentDataKey);
+                        await AsyncStorage.setItem('content_data_exists', 'true');
+                        await AsyncStorage.setItem('content_data_timestamp', timestamp.toString());
+
+                        contentDataToUse = enhancedContentData;
+                        contentTimestampToUse = timestamp;
+                      }
+
+                      // 항상 가장 최근 데이터로 content_data 업데이트
+                      await AsyncStorage.setItem('content_data', JSON.stringify(contentDataToUse));
+
+                      // PersonalContent 화면으로 이동, 자동 모달 표시 플래그 추가
+                      navigation.navigate('PersonalContent', {
+                        messageData: contentDataToUse,
+                        messageId: messageUniqueId,
+                        autoShowModal: true, // 자동으로 모달 표시하기 위한 플래그
+                        timestamp: contentTimestampToUse // 타임스탬프 전달
+                      });
+                      return;
                     } else if (effectiveCategory === "preparation") {
                       // 준비물 카테고리인 경우 PrepareScreen으로 이동
                       console.log("준비물 카테고리 - PrepareScreen으로 이동");
@@ -605,7 +779,7 @@ export default function MainScreen() {
                                 storedData.message &&
                                 completeData.message &&
                                 JSON.stringify(storedData.message) ===
-                                  JSON.stringify(completeData.message)
+                                JSON.stringify(completeData.message)
                               ) {
                                 console.log(`일치하는 데이터 찾음: ${key}`);
                                 existingDataKey = key;
