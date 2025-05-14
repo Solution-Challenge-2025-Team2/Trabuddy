@@ -5,7 +5,6 @@ import {
   useFonts,
   OriginalSurfer_400Regular,
 } from "@expo-google-fonts/original-surfer";
-import { setCustomText } from "react-native-global-props";
 import { Outfit_400Regular } from "@expo-google-fonts/outfit";
 import Main from "./screens/MainScreen"; // main page
 import Emergency from "./screens/EmergencyScreen"; // emergency page
@@ -51,14 +50,6 @@ if (__DEV__) {
 }
 
 const Stack = createNativeStackNavigator();
-
-const customTextProps = {
-  style: {
-    fontFamily: "Outfit",
-  },
-};
-
-setCustomText(customTextProps); // 모든 텍스트에 Outfit 폰트 적용
 
 export default function App() {
   const [fontsLoaded] = useFonts({

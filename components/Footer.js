@@ -21,6 +21,22 @@ export default function Footer() {
   const navigation = useNavigation(); // 네비게이션 객체
   const route = useRoute(); // 현재 경로
 
+  {
+    /* text input customize */
+  }
+  const inputRef = useRef(null); // 입력창 필드
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.setNativeProps({
+        style: { fontFamily: "Outfit", fontSize: 15 },
+      });
+    }
+  }, []); // 입력창 폰트 설정
+
+  {
+    /* 음성 녹음 관련 설정 */
+  }
   const recordingRef = useRef(null);
   const [recording, setRecording] = useState(false);
 
@@ -185,6 +201,7 @@ export default function Footer() {
         >
           <View style={styles.PromptInput}>
             <TextInput
+              ref={inputRef}
               style={styles.textInput}
               placeholder={
                 isLoading ? "Waiting for message..." : "Type your message..."
