@@ -14,7 +14,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useChat } from "../context/ChatContext";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Speech from "expo-speech";
 
 const Sidebar = ({ navigation }) => {
@@ -30,10 +30,10 @@ const Sidebar = ({ navigation }) => {
   // Check login status function
   const checkLoginStatus = async () => {
     try {
-      const token = await AsyncStorage.getItem('access_token');
+      const token = await AsyncStorage.getItem("access_token");
       setIsLoggedIn(!!token); // Set logged in if token exists
     } catch (error) {
-      console.error('Error checking token:', error);
+      console.error("Error checking token:", error);
     }
   };
 
@@ -41,10 +41,10 @@ const Sidebar = ({ navigation }) => {
   const handleLogout = async () => {
     try {
       // 로그인 토큰 삭제
-      await AsyncStorage.removeItem('access_token');
+      await AsyncStorage.removeItem("access_token");
 
       // 세션 ID 삭제
-      await AsyncStorage.removeItem('current_session_id');
+      await AsyncStorage.removeItem("current_session_id");
 
       // 모든 저장된 데이터 지우기
       await clearAllUserData();
@@ -60,15 +60,15 @@ const Sidebar = ({ navigation }) => {
         Speech.stop();
       }
 
-      Alert.alert('Notice', 'You have been logged out.');
+      Alert.alert("Notice", "You have been logged out.");
 
       // Navigate to main screen
       setTimeout(() => {
         navigation.navigate("Main");
       }, 50);
     } catch (error) {
-      console.error('Logout error:', error);
-      Alert.alert('Error', 'There was a problem during logout.');
+      console.error("Logout error:", error);
+      Alert.alert("Error", "There was a problem during logout.");
     }
   };
 
@@ -78,21 +78,21 @@ const Sidebar = ({ navigation }) => {
       // 필수 키 목록 (직접 삭제할 중요 키들)
       const keysToRemove = [
         // 로그인 및 세션 관련
-        'access_token',
-        'current_session_id',
+        "access_token",
+        "current_session_id",
 
         // 채팅 데이터 관련
-        'active_message_id',
-        'last_response_data',
+        "active_message_id",
+        "last_response_data",
 
         // 준비물 데이터 관련
-        'travel_essentials_data',
-        'travel_essentials_destination',
-        'travel_essentials_startDate',
-        'travel_essentials_endDate',
-        'latest_preparation_data_key',
-        'preparation_data_exists',
-        'preparation_data_timestamp'
+        "travel_essentials_data",
+        "travel_essentials_destination",
+        "travel_essentials_startDate",
+        "travel_essentials_endDate",
+        "latest_preparation_data_key",
+        "preparation_data_exists",
+        "preparation_data_timestamp",
       ];
 
       // 필수 키 삭제
@@ -104,12 +104,13 @@ const Sidebar = ({ navigation }) => {
       const allKeys = await AsyncStorage.getAllKeys();
 
       // 특정 패턴의 키들 찾기 (message_, response_, prep_data_ 등으로 시작하는 키)
-      const dynamicKeys = allKeys.filter(key =>
-        key.startsWith('message_') ||
-        key.startsWith('response_') ||
-        key.startsWith('prep_data_') ||
-        key.startsWith('content_') ||
-        key.startsWith('preparation_')
+      const dynamicKeys = allKeys.filter(
+        (key) =>
+          key.startsWith("message_") ||
+          key.startsWith("response_") ||
+          key.startsWith("prep_data_") ||
+          key.startsWith("content_") ||
+          key.startsWith("preparation_")
       );
 
       // 로그 확인
@@ -120,9 +121,9 @@ const Sidebar = ({ navigation }) => {
         await AsyncStorage.multiRemove(dynamicKeys);
       }
 
-      console.log('모든 사용자 데이터가 성공적으로 삭제되었습니다.');
+      console.log("모든 사용자 데이터가 성공적으로 삭제되었습니다.");
     } catch (error) {
-      console.error('데이터 삭제 중 오류:', error);
+      console.error("데이터 삭제 중 오류:", error);
       // 오류가 발생해도 로그아웃 프로세스는 계속 진행
     }
   };
@@ -183,14 +184,11 @@ const Sidebar = ({ navigation }) => {
       <View style={styles.userInfoContainer}>
         <View style={styles.profileImagePlaceholder}>
           <Image
-            source={require('../assets/figma_images/trabuddy_face.png')}
+            source={require("../assets/figma_images/trabuddy_face.png")}
             style={styles.profileImage}
           />
         </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Log out</Text>
         </TouchableOpacity>
       </View>
@@ -207,7 +205,7 @@ const Sidebar = ({ navigation }) => {
         onPress={() => navigation.navigate("Login")}
       >
         <LinearGradient
-          colors={['#40ABE5', '#528099']}
+          colors={["#40ABE5", "#528099"]}
           style={styles.loginGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -267,10 +265,10 @@ const Sidebar = ({ navigation }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigateAndDismissKeyboard("Emergency")}
+          onPress={() => navigateAndDismissKeyboard("Problem")}
           style={styles.menuItem}
         >
-          <Text style={styles.link}>Emergency</Text>
+          <Text style={styles.link}>Problems</Text>
         </TouchableOpacity>
 
         {isLoggedIn && (
@@ -284,9 +282,7 @@ const Sidebar = ({ navigation }) => {
       </View>
 
       {/* Login button (placed at bottom of screen) */}
-      <View style={styles.loginButtonContainer}>
-        {renderLoginButton()}
-      </View>
+      <View style={styles.loginButtonContainer}>{renderLoginButton()}</View>
     </Frame>
   );
 };
@@ -312,7 +308,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   profileImage: {
     width: 80,
@@ -336,7 +332,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   loginButtonContainer: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     paddingRight: 20,
     paddingBottom: 30,
   },

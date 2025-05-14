@@ -7,12 +7,12 @@ import {
 } from "@expo-google-fonts/original-surfer";
 import { Outfit_400Regular } from "@expo-google-fonts/outfit";
 import Main from "./screens/MainScreen"; // main page
-import Emergency from "./screens/EmergencyScreen"; // emergency page
+import Problem from "./screens/ProblemScreen"; // Problem page
 import PersonalContent from "./screens/PersonalContentScreen"; //personal content page
 import Prepare from "./screens/PrepareScreen"; // prepare page
 import PreviousChat from "./screens/PreviousChatScreen"; // previous chat page
 import Sidebar from "./screens/SidebarScreen"; // Sidebar (header, footer 제외)
-import HistoryCulture from "./screens/HistoryCultureScreen"; // 추가: History/Culture 페이지
+import HistoryDetail from "./screens/HistoryDetailScreen"; // 추가: History/Culture 페이지
 import Login from "./screens/LoginScreen"; // 추가: 로그인 페이지
 import { ChatProvider } from "./context/ChatContext"; // 추가: 채팅 컨텍스트
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -86,12 +86,12 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={Main} />
-          <Stack.Screen name="Emergency" component={Emergency} />
+          <Stack.Screen name="Problem" component={Problem} />
           <Stack.Screen name="PersonalContent" component={PersonalContent} />
           <Stack.Screen name="PrepareTravels" component={Prepare} />
           <Stack.Screen name="PreviousChat" component={PreviousChat} />
           <Stack.Screen name="Sidebar" component={Sidebar} />
-          <Stack.Screen name="HistoryCulture" component={HistoryCulture} />
+          <Stack.Screen name="HistoryDetail" component={HistoryDetail} />
           <Stack.Screen name="Login" component={Login} />
           {/* Add other screens here */}
         </Stack.Navigator>

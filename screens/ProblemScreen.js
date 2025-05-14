@@ -11,10 +11,22 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Frame from "../Frame";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { problemDescriptions } from "../data/ProblemDescriptions";
+import * as Speech from "expo-speech";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = SCREEN_WIDTH * 0.8;
+const CARD_WIDTH = SCREEN_WIDTH * 0.95;
+
+// TTS 기능 추가
+const speak = (text) => {
+  Speech.stop();
+  Speech.speak(text, {
+    language: "en-US",
+    rate: 0.9,
+    pitch: 1.0,
+  });
+};
 
 // 피그마에서 가져온 색상
 const FIGMA_COLORS = {
@@ -33,8 +45,8 @@ const FIGMA_COLORS = {
 const PROBLEM_DATA = [
   {
     id: "1",
-    title: "Lost",
-    description: "solution text for lost problem.....\n\ncall 02-xxx-xxx",
+    title: "Lost Items",
+    description: problemDescriptions.lost,
     icon: require("../assets/figma_images/lost_icon.png"),
     expanded: false,
   },
@@ -99,12 +111,7 @@ export default function EmergencyScreen() {
             showsVerticalScrollIndicator={false}
           >
             {problems.map((problem) => (
-              <TouchableOpacity
-                key={problem.id}
-                style={styles.cardWrapper}
-                onPress={() => toggleExpand(problem.id)}
-                activeOpacity={0.9}
-              >
+              <View key={problem.id} style={styles.cardWrapper}>
                 {/* 외부 카드 (헤더 영역) */}
                 <LinearGradient
                   colors={[
@@ -119,43 +126,107 @@ export default function EmergencyScreen() {
                   <View style={styles.headerSection}>
                     <Text style={styles.cardTitle}>{problem.title}</Text>
                   </View>
-
-                  {/* 내부 카드 (아이콘 및 해결책) */}
                   <View style={styles.innerCard}>
-                    {/* 아이콘 영역 */}
-                    <View style={styles.iconSection}>
-                      <Image source={problem.icon} style={styles.cardIcon} />
-                      {/* 화살표 아이콘 */}
-                      <View style={styles.expandIconContainer}>
-                        {problem.expanded ? (
-                          <AntDesign
-                            name="caretup"
-                            size={18}
-                            color="#40ABE5"
-                            style={styles.expandIcon}
-                          />
-                        ) : (
-                          <AntDesign
-                            name="caretdown"
-                            size={18}
-                            color="#40ABE5"
-                            style={styles.expandIcon}
-                          />
-                        )}
+                    {/* 내부 카드 (아이콘 및 해결책) */}
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => toggleExpand(problem.id)}
+                    >
+                      {/* 아이콘 영역 */}
+                      <View style={styles.iconSection}>
+                        <Image source={problem.icon} style={styles.cardIcon} />
+                        {/* 화살표 아이콘 */}
+                        <View style={styles.expandIconContainer}>
+                          {problem.expanded ? (
+                            <AntDesign
+                              name="caretup"
+                              size={18}
+                              color="#40ABE5"
+                              style={styles.expandIcon}
+                            />
+                          ) : (
+                            <AntDesign
+                              name="caretdown"
+                              size={18}
+                              color="#40ABE5"
+                              style={styles.expandIcon}
+                            />
+                          )}
+                        </View>
                       </View>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* 해결책 영역 (확장됐을 때만 표시) */}
                     {problem.expanded && (
                       <View style={styles.solutionSection}>
-                        <Text style={styles.cardDescription}>
-                          {problem.description}
-                        </Text>
+                        {problem.id === "1" ? (
+                          problem.description.map((item) => (
+                            <View key={item.id} style={styles.problemGroup}>
+                              {/* 제목 */}
+                              <Text style={styles.cardSubtitle}>
+                                {item.title}
+                              </Text>
+
+                              {/* 단계별 안내 (steps) */}
+                              {item.steps.map((step, index) => (
+                                <View
+                                  key={`step-${index}`}
+                                  style={styles.descriptionRow}
+                                >
+                                  <Text style={styles.cardDescription}>
+                                    {step}
+                                  </Text>
+                                  <TouchableOpacity onPress={() => speak(step)}>
+                                    <MaterialIcons
+                                      name="volume-up"
+                                      size={20}
+                                      color="#40ABE5"
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+
+                              {/* 유의사항/팁 (tips) */}
+                              {item.tips.map((tip, index) => (
+                                <View
+                                  key={`tip-${index}`}
+                                  style={styles.descriptionRow}
+                                >
+                                  <Text style={styles.cardDescription}>
+                                    {tip}
+                                  </Text>
+                                  <TouchableOpacity onPress={() => speak(tip)}>
+                                    <MaterialIcons
+                                      name="volume-up"
+                                      size={20}
+                                      color="#40ABE5"
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                            </View>
+                          ))
+                        ) : (
+                          <View style={styles.descriptionRow}>
+                            <Text style={styles.cardDescription}>
+                              {problem.description}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => speak(problem.description)}
+                            >
+                              <MaterialIcons
+                                name="volume-up"
+                                size={20}
+                                color="#40ABE5"
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     )}
                   </View>
                 </LinearGradient>
-              </TouchableOpacity>
+              </View>
             ))}
           </ScrollView>
         </SafeAreaView>
@@ -191,10 +262,9 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: 30,
     alignItems: "center",
-    paddingHorizontal: 5,
   },
   cardWrapper: {
-    width: CARD_WIDTH,
+    width: "100%",
     marginBottom: 16,
     borderRadius: 25,
     overflow: "hidden",
@@ -258,5 +328,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: FIGMA_COLORS.primaryText,
     lineHeight: 24,
+  },
+  cardSubtitle: {
+    fontFamily: "Outfit",
+    fontSize: 20,
+    color: FIGMA_COLORS.primaryText,
+    marginBottom: 10,
+  },
+  descriptionRow: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: 6,
+    marginBottom: 8,
   },
 });
