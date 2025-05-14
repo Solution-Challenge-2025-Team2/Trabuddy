@@ -5,6 +5,7 @@ import {
   useFonts,
   OriginalSurfer_400Regular,
 } from "@expo-google-fonts/original-surfer";
+import { setCustomText } from "react-native-global-props";
 import { Outfit_400Regular } from "@expo-google-fonts/outfit";
 import Main from "./screens/MainScreen"; // main page
 import Emergency from "./screens/EmergencyScreen"; // emergency page
@@ -15,7 +16,7 @@ import Sidebar from "./screens/SidebarScreen"; // Sidebar (header, footer 제외
 import HistoryCulture from "./screens/HistoryCultureScreen"; // 추가: History/Culture 페이지
 import Login from "./screens/LoginScreen"; // 추가: 로그인 페이지
 import { ChatProvider } from "./context/ChatContext"; // 추가: 채팅 컨텍스트
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // 개발용 네트워크 모니터링 설정
 if (__DEV__) {
@@ -24,8 +25,8 @@ if (__DEV__) {
 
   // 콘솔 로그를 더 눈에 띄게 만듭니다
   console.log = (...args) => {
-    const newArgs = args.map(arg => {
-      if (typeof arg === 'string' && arg.includes('API')) {
+    const newArgs = args.map((arg) => {
+      if (typeof arg === "string" && arg.includes("API")) {
         return `\n🔍 ${arg} 🔍\n`;
       }
       return arg;
@@ -38,7 +39,11 @@ if (__DEV__) {
   global.fetch = (...args) => {
     const url = args[0].toString();
     // symbolicate 및 내부 개발 요청은 로그에 출력하지 않음
-    if (!url.includes('symbolicate') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    if (
+      !url.includes("symbolicate") &&
+      !url.includes("localhost") &&
+      !url.includes("127.0.0.1")
+    ) {
       console.log(`\n📡 Fetch Request: ${url}\n`);
     }
     return global._fetch(...args);
@@ -46,6 +51,14 @@ if (__DEV__) {
 }
 
 const Stack = createNativeStackNavigator();
+
+const customTextProps = {
+  style: {
+    fontFamily: "Outfit",
+  },
+};
+
+setCustomText(customTextProps); // 모든 텍스트에 Outfit 폰트 적용
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -61,10 +74,10 @@ export default function App() {
     // AsyncStorage에서 토큰 확인
     const checkLoginStatus = async () => {
       try {
-        const token = await AsyncStorage.getItem('access_token');
+        const token = await AsyncStorage.getItem("access_token");
         setIsLoggedIn(!!token);
       } catch (error) {
-        console.error('토큰 확인 오류:', error);
+        console.error("토큰 확인 오류:", error);
       } finally {
         setIsLoading(false);
       }
@@ -86,10 +99,10 @@ export default function App() {
           <Stack.Screen name="PersonalContent" component={PersonalContent} />
           <Stack.Screen name="PrepareTravels" component={Prepare} />
           <Stack.Screen name="PreviousChat" component={PreviousChat} />
-          {/* Add other screens here */}
           <Stack.Screen name="Sidebar" component={Sidebar} />
           <Stack.Screen name="HistoryCulture" component={HistoryCulture} />
           <Stack.Screen name="Login" component={Login} />
+          {/* Add other screens here */}
         </Stack.Navigator>
       </NavigationContainer>
     </ChatProvider>

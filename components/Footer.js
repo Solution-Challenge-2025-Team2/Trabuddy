@@ -187,7 +187,7 @@ export default function Footer() {
             <TextInput
               style={styles.textInput}
               placeholder={
-                isLoading ? "응답을 기다리는 중..." : "Type your message..."
+                isLoading ? "Waiting for message..." : "Type your message..."
               }
               placeholderTextColor={isLoading ? "#999" : "#888"}
               value={message}
