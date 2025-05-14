@@ -10,8 +10,9 @@ import {
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
+import { useChat } from "./context/ChatContext";
 
 // header와 footer를 포함한 모바일 틀
 export default function Frame({
@@ -20,6 +21,8 @@ export default function Frame({
   disableBackground = false,
 }) {
   const route = useRoute();
+  const navigation = useNavigation();
+  const { pendingNavigation, setPendingNavigation } = useChat();
   const [keyboardDuration, setKeyboardDuration] = useState(250); // 기본 키보드 애니메이션 시간
 
   // 키보드 애니메이션 속도 감지
@@ -39,13 +42,43 @@ export default function Frame({
     };
   }, []);
 
+  // 보류 중인 내비게이션 처리
+  useEffect(() => {
+    const handlePendingNavigation = async () => {
+      if (pendingNavigation) {
+        console.log('보류 중인 내비게이션 감지:', pendingNavigation.screen);
+
+        // 현재 화면이 목적지 화면과 동일한지 확인 (중복 이동 방지)
+        if (route.name !== pendingNavigation.screen) {
+          // 다른 화면일 경우에만 이동
+          try {
+            // 잠시 지연 후 이동 (UI 업데이트 완료 대기)
+            setTimeout(() => {
+              navigation.navigate(pendingNavigation.screen, pendingNavigation.params);
+              console.log('자동 내비게이션 실행:', pendingNavigation.screen);
+            }, 100);
+          } catch (error) {
+            console.error('자동 내비게이션 실행 오류:', error);
+          }
+        } else {
+          console.log('이미 목적지 화면에 있어 내비게이션 생략:', route.name);
+        }
+
+        // 내비게이션 처리 후 상태 초기화
+        setPendingNavigation(null);
+      }
+    };
+
+    handlePendingNavigation();
+  }, [pendingNavigation, navigation, route.name, setPendingNavigation]);
+
   const Wrapper = disableBackground ? View : ImageBackground;
   const wrapperProps = disableBackground
     ? { style: styles.container }
     : {
-        source: require("./assets/background-img.png"),
-        style: styles.container,
-      };
+      source: require("./assets/background-img.png"),
+      style: styles.container,
+    };
   return (
     <SafeAreaView style={styles.safeArea}>
       <Wrapper {...wrapperProps}>
