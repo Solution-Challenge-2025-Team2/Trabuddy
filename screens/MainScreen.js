@@ -23,7 +23,7 @@ import {
 import Frame from "../Frame";
 import { useChat } from "../context/ChatContext"; // Use chat context
 import * as Speech from "expo-speech";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Define app's main colors
 const COLORS = {
@@ -43,7 +43,14 @@ const COLORS = {
 
 export default function MainScreen() {
   const navigation = useNavigation();
-  const { messages, isChatActive, addMessage, isLoading, isLoggedIn, setIsLoggedIn } = useChat(); // Get functions and state from context
+  const {
+    messages,
+    isChatActive,
+    addMessage,
+    isLoading,
+    isLoggedIn,
+    setIsLoggedIn,
+  } = useChat(); // Get functions and state from context
   const scrollViewRef = useRef(null);
   const [isSpeaking, setIsSpeaking] = useState(false); // TTS running state
 
@@ -51,27 +58,31 @@ export default function MainScreen() {
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        const token = await AsyncStorage.getItem('access_token');
-        console.log('MainScreen - 토큰 확인:', token ? '있음' : '없음');
+        const token = await AsyncStorage.getItem("access_token");
+        console.log("MainScreen - 토큰 확인:", token ? "있음" : "없음");
 
         // 토큰이 있으면 로그인 상태로 설정
         if (token) {
           if (!isLoggedIn) {
-            console.log('MainScreen - 토큰은 있지만 로그인 상태가 false여서 true로 업데이트');
+            console.log(
+              "MainScreen - 토큰은 있지만 로그인 상태가 false여서 true로 업데이트"
+            );
             setIsLoggedIn(true);
           } else {
-            console.log('MainScreen - 토큰 있음, 로그인 상태 이미 true');
+            console.log("MainScreen - 토큰 있음, 로그인 상태 이미 true");
           }
         } else {
           if (isLoggedIn) {
-            console.log('MainScreen - 토큰이 없지만 로그인 상태가 true여서 false로 업데이트');
+            console.log(
+              "MainScreen - 토큰이 없지만 로그인 상태가 true여서 false로 업데이트"
+            );
             setIsLoggedIn(false);
           } else {
-            console.log('MainScreen - 토큰 없음, 로그인 상태 이미 false');
+            console.log("MainScreen - 토큰 없음, 로그인 상태 이미 false");
           }
         }
       } catch (error) {
-        console.error('MainScreen - 로그인 상태 확인 오류:', error);
+        console.error("MainScreen - 로그인 상태 확인 오류:", error);
       }
     };
 
@@ -151,17 +162,17 @@ export default function MainScreen() {
     let responseCategory = null; // 카테고리 정보 저장 변수 추가
 
     // 디버깅: 메시지 구조 출력
-    console.log('renderMessage - 메시지 ID:', message.id);
-    console.log('renderMessage - 메시지 타입:', typeof message.text);
+    console.log("renderMessage - 메시지 ID:", message.id);
+    console.log("renderMessage - 메시지 타입:", typeof message.text);
 
     // Handle if object
-    if (typeof message.text === 'object' && message.text !== null) {
-      console.log('renderMessage - 객체 키:', Object.keys(message.text));
+    if (typeof message.text === "object" && message.text !== null) {
+      console.log("renderMessage - 객체 키:", Object.keys(message.text));
 
       // 카테고리 정보 추출
       if (message.text.category) {
         responseCategory = message.text.category;
-        console.log('renderMessage - 카테고리 발견:', responseCategory);
+        console.log("renderMessage - 카테고리 발견:", responseCategory);
       }
 
       // summary 필드가 있으면 summary를 텍스트로 표시
@@ -176,7 +187,16 @@ export default function MainScreen() {
       }
 
       // 다양한 이미지 URL 속성명 검사
-      const possibleImageProps = ['image_url', 'imageURL', 'imageUrl', 'image', 'img_url', 'imgURL', 'imgUrl', 'img'];
+      const possibleImageProps = [
+        "image_url",
+        "imageURL",
+        "imageUrl",
+        "image",
+        "img_url",
+        "imgURL",
+        "imgUrl",
+        "img",
+      ];
 
       for (const prop of possibleImageProps) {
         if (message.text[prop]) {
@@ -188,13 +208,25 @@ export default function MainScreen() {
     }
 
     // 메시지 자체에서 이미지 URL 속성 검사 (서버 응답 구조가 다른 경우)
-    if (!imageUrl && typeof message === 'object') {
-      const possibleImageProps = ['image_url', 'imageURL', 'imageUrl', 'image', 'img_url', 'imgURL', 'imgUrl', 'img'];
+    if (!imageUrl && typeof message === "object") {
+      const possibleImageProps = [
+        "image_url",
+        "imageURL",
+        "imageUrl",
+        "image",
+        "img_url",
+        "imgURL",
+        "imgUrl",
+        "img",
+      ];
 
       for (const prop of possibleImageProps) {
         if (message[prop]) {
           imageUrl = message[prop];
-          console.log(`renderMessage - 메시지에서 이미지 속성 발견 (${prop}):`, imageUrl);
+          console.log(
+            `renderMessage - 메시지에서 이미지 속성 발견 (${prop}):`,
+            imageUrl
+          );
           break;
         }
       }
@@ -202,7 +234,7 @@ export default function MainScreen() {
 
     // 이미지 URL 값 확인
     if (imageUrl) {
-      console.log('renderMessage - 최종 이미지 URL:', imageUrl);
+      console.log("renderMessage - 최종 이미지 URL:", imageUrl);
     }
 
     if (message.isUser) {
@@ -222,22 +254,28 @@ export default function MainScreen() {
           <View style={styles.botMessageContainer}>
             <View style={styles.botProfileContainer}>
               <Image
-                source={require('../assets/figma_images/trabuddy_face.png')}
+                source={require("../assets/figma_images/trabuddy_face.png")}
                 style={styles.botProfileImage}
               />
             </View>
 
             {/* Main message bubble */}
-            <View style={[
-              styles.messageBubble,
-              styles.botMessageBubble,
-              message.isError && styles.errorMessageBubble
-            ]}>
+            <View
+              style={[
+                styles.messageBubble,
+                styles.botMessageBubble,
+                message.isError && styles.errorMessageBubble,
+              ]}
+            >
               <View style={styles.messageContentContainer}>
-                <Text style={[
-                  styles.messageText,
-                  message.isError && styles.errorMessageText
-                ]}>{messageText}</Text>
+                <Text
+                  style={[
+                    styles.messageText,
+                    message.isError && styles.errorMessageText,
+                  ]}
+                >
+                  {messageText}
+                </Text>
 
                 {/* TTS button */}
                 <TouchableOpacity
@@ -259,8 +297,15 @@ export default function MainScreen() {
                     source={{ uri: imageUrl }}
                     style={styles.messageImage}
                     resizeMode="cover"
-                    onError={(e) => console.log('이미지 로딩 오류:', e.nativeEvent.error, '- URL:', imageUrl)}
-                    onLoad={() => console.log('이미지 로드 성공:', imageUrl)}
+                    onError={(e) =>
+                      console.log(
+                        "이미지 로딩 오류:",
+                        e.nativeEvent.error,
+                        "- URL:",
+                        imageUrl
+                      )
+                    }
+                    onLoad={() => console.log("이미지 로드 성공:", imageUrl)}
                   />
                 </View>
               )}
@@ -268,9 +313,7 @@ export default function MainScreen() {
               {/* Show category if available */}
               {responseCategory && (
                 <View style={styles.categoryContainer}>
-                  <Text style={styles.categoryText}>
-                    {responseCategory}
-                  </Text>
+                  <Text style={styles.categoryText}>{responseCategory}</Text>
                 </View>
               )}
             </View>
@@ -281,12 +324,12 @@ export default function MainScreen() {
             <TouchableOpacity
               style={styles.viewMoreButton}
               onPress={() => {
-                console.log('View more details 버튼 클릭됨');
+                console.log("View more details 버튼 클릭됨");
 
                 // 디버깅용 로그
-                console.log('메시지 객체:', message);
-                console.log('메시지 ID:', message.id);
-                console.log('responseCategory:', responseCategory);
+                console.log("메시지 객체:", message);
+                console.log("메시지 ID:", message.id);
+                console.log("responseCategory:", responseCategory);
 
                 // 고유 메시지 ID 생성
                 const messageUniqueId = `message_${message.id}`;
@@ -295,52 +338,76 @@ export default function MainScreen() {
                 const handleViewMoreDetails = async () => {
                   try {
                     // 전체 응답 데이터 가져오기 (완전한 message 필드 포함 데이터)
-                    const lastResponseData = await AsyncStorage.getItem('last_response_data');
-                    const parsedLastResponseData = lastResponseData ? JSON.parse(lastResponseData) : null;
+                    const lastResponseData = await AsyncStorage.getItem(
+                      "last_response_data"
+                    );
+                    const parsedLastResponseData = lastResponseData
+                      ? JSON.parse(lastResponseData)
+                      : null;
 
                     // 현재 메시지 데이터
                     const messageText = message.text;
-                    console.log('메시지 텍스트 유형:', typeof messageText);
+                    console.log("메시지 텍스트 유형:", typeof messageText);
 
                     // 완전한 데이터를 찾아야 함 (message 필드 포함)
                     let completeData = null;
 
                     // 1. 이미 메시지가 완전한 데이터인 경우 (거의 없음)
-                    if (typeof messageText === 'object' &&
+                    if (
+                      typeof messageText === "object" &&
                       messageText !== null &&
                       messageText.message &&
-                      typeof messageText.message === 'object') {
-                      console.log('메시지가 이미 완전한 데이터를 포함하고 있습니다');
+                      typeof messageText.message === "object"
+                    ) {
+                      console.log(
+                        "메시지가 이미 완전한 데이터를 포함하고 있습니다"
+                      );
                       completeData = messageText;
                     }
                     // 2. 메시지가 summary를 포함한 객체인 경우 (일반적인 경우)
-                    else if (typeof messageText === 'object' &&
+                    else if (
+                      typeof messageText === "object" &&
                       messageText !== null &&
                       messageText.category &&
-                      (messageText.summary || messageText.answer)) {
-
+                      (messageText.summary || messageText.answer)
+                    ) {
                       // 해당 메시지의 요약 정보 추출
-                      const messageSummary = messageText.summary || messageText.answer;
+                      const messageSummary =
+                        messageText.summary || messageText.answer;
                       const messageCategory = messageText.category;
 
-                      console.log(`메시지는 요약 정보만 포함: 카테고리=${messageCategory}`);
+                      console.log(
+                        `메시지는 요약 정보만 포함: 카테고리=${messageCategory}`
+                      );
 
                       // Last response data에서 일치 여부 확인
-                      if (parsedLastResponseData &&
+                      if (
+                        parsedLastResponseData &&
                         parsedLastResponseData.category === messageCategory &&
-                        parsedLastResponseData.summary === messageSummary) {
-                        console.log('last_response_data가 현재 메시지와 일치합니다!');
+                        parsedLastResponseData.summary === messageSummary
+                      ) {
+                        console.log(
+                          "last_response_data가 현재 메시지와 일치합니다!"
+                        );
                         completeData = parsedLastResponseData;
                       } else {
-                        console.log('last_response_data가 현재 메시지와 일치하지 않습니다. API 데이터를 검색합니다...');
+                        console.log(
+                          "last_response_data가 현재 메시지와 일치하지 않습니다. API 데이터를 검색합니다..."
+                        );
 
                         // 추가 검색: AsyncStorage에서 이 메시지를 위해 이전에 저장한 데이터가 있는지 확인
                         try {
                           // 모든 AsyncStorage 키 가져오기
                           const allKeys = await AsyncStorage.getAllKeys();
-                          const responseKeys = allKeys.filter(key => key.includes('response_') || key.includes('message_'));
+                          const responseKeys = allKeys.filter(
+                            (key) =>
+                              key.includes("response_") ||
+                              key.includes("message_")
+                          );
 
-                          console.log(`${responseKeys.length}개의 응답 데이터 키를 찾았습니다. 일치하는 데이터 검색 중...`);
+                          console.log(
+                            `${responseKeys.length}개의 응답 데이터 키를 찾았습니다. 일치하는 데이터 검색 중...`
+                          );
 
                           // 모든 저장된 응답 데이터에서 현재 메시지와 일치하는 데이터 찾기
                           let foundMatchingData = false;
@@ -352,141 +419,194 @@ export default function MainScreen() {
                                 const parsedData = JSON.parse(storedData);
 
                                 // 일치 여부 확인 (카테고리와 요약으로)
-                                if (parsedData.category === messageCategory &&
-                                  parsedData.summary === messageSummary) {
-                                  console.log(`일치하는 데이터를 찾았습니다! 키: ${key}`);
+                                if (
+                                  parsedData.category === messageCategory &&
+                                  parsedData.summary === messageSummary
+                                ) {
+                                  console.log(
+                                    `일치하는 데이터를 찾았습니다! 키: ${key}`
+                                  );
                                   completeData = parsedData;
                                   foundMatchingData = true;
                                   break;
                                 }
                               } catch (e) {
-                                console.log(`${key} 데이터 파싱 실패:`, e.message);
+                                console.log(
+                                  `${key} 데이터 파싱 실패:`,
+                                  e.message
+                                );
                               }
                             }
                           }
 
                           if (!foundMatchingData) {
-                            console.log('일치하는 완전한 데이터를 찾지 못했습니다');
+                            console.log(
+                              "일치하는 완전한 데이터를 찾지 못했습니다"
+                            );
 
                             // 임시 해결책: 테스트 데이터 생성 (실제 프로덕션에서는 제거)
-                            if (messageCategory === 'contents') {
-                              console.log('컨텐츠 카테고리 - 테스트 데이터 생성');
+                            if (messageCategory === "contents") {
+                              console.log(
+                                "컨텐츠 카테고리 - 테스트 데이터 생성"
+                              );
                               completeData = {
                                 category: "contents",
                                 message: {
-                                  "Place": [
+                                  Place: [
                                     {
-                                      "name": "장소 데이터",
-                                      "information": "이 장소에 대한 설명입니다.",
-                                      "imageurl": "https://images.pexels.com/photos/532826/pexels-photo-532826.jpeg"
-                                    }
+                                      name: "장소 데이터",
+                                      information: "이 장소에 대한 설명입니다.",
+                                      imageurl:
+                                        "https://images.pexels.com/photos/532826/pexels-photo-532826.jpeg",
+                                    },
                                   ],
                                   "F&B": [
                                     {
-                                      "name": "음식 데이터",
-                                      "information": "이 음식에 대한 설명입니다.",
-                                      "imageurl": "https://images.pexels.com/photos/1446616/pexels-photo-1446616.jpeg"
-                                    }
+                                      name: "음식 데이터",
+                                      information: "이 음식에 대한 설명입니다.",
+                                      imageurl:
+                                        "https://images.pexels.com/photos/1446616/pexels-photo-1446616.jpeg",
+                                    },
                                   ],
-                                  "Activity": [
+                                  Activity: [
                                     {
-                                      "name": "활동 데이터",
-                                      "information": "이 활동에 대한 설명입니다.",
-                                      "imageurl": "https://images.pexels.com/photos/17856787/pexels-photo-17856787.jpeg"
-                                    }
-                                  ]
+                                      name: "활동 데이터",
+                                      information: "이 활동에 대한 설명입니다.",
+                                      imageurl:
+                                        "https://images.pexels.com/photos/17856787/pexels-photo-17856787.jpeg",
+                                    },
+                                  ],
                                 },
-                                summary: messageSummary || "테스트 데이터입니다"
+                                summary:
+                                  messageSummary || "테스트 데이터입니다",
                               };
                             }
                           }
                         } catch (e) {
-                          console.error('저장된 응답 데이터 검색 중 오류:', e);
+                          console.error("저장된 응답 데이터 검색 중 오류:", e);
                         }
                       }
                     }
 
                     // 3. 완전한 데이터를 찾지 못한 경우 최종 fallback
                     if (!completeData) {
-                      console.log('완전한 데이터를 찾지 못했습니다. 기본 데이터 사용');
+                      console.log(
+                        "완전한 데이터를 찾지 못했습니다. 기본 데이터 사용"
+                      );
 
                       // 텍스트 또는 부분 객체를 사용
-                      if (typeof messageText === 'object' && messageText !== null) {
+                      if (
+                        typeof messageText === "object" &&
+                        messageText !== null
+                      ) {
                         completeData = messageText;
                       } else {
                         completeData = {
                           text: messageText,
-                          category: responseCategory || 'unknown'
+                          category: responseCategory || "unknown",
                         };
                       }
                     }
 
                     // 데이터 검증
-                    console.log('전송할 데이터 유형:', typeof completeData);
-                    if (typeof completeData === 'object') {
-                      console.log('전송할 데이터 키:', Object.keys(completeData));
+                    console.log("전송할 데이터 유형:", typeof completeData);
+                    if (typeof completeData === "object") {
+                      console.log(
+                        "전송할 데이터 키:",
+                        Object.keys(completeData)
+                      );
 
                       // 메시지 필드 확인
                       if (completeData.message) {
-                        console.log('message 필드 있음, 키:', Object.keys(completeData.message));
+                        console.log(
+                          "message 필드 있음, 키:",
+                          Object.keys(completeData.message)
+                        );
 
                         // 카테고리 데이터 확인
-                        const hasPlace = completeData.message.Place && Array.isArray(completeData.message.Place);
-                        const hasFnB = completeData.message['F&B'] && Array.isArray(completeData.message['F&B']);
-                        const hasActivity = completeData.message.Activity && Array.isArray(completeData.message.Activity);
+                        const hasPlace =
+                          completeData.message.Place &&
+                          Array.isArray(completeData.message.Place);
+                        const hasFnB =
+                          completeData.message["F&B"] &&
+                          Array.isArray(completeData.message["F&B"]);
+                        const hasActivity =
+                          completeData.message.Activity &&
+                          Array.isArray(completeData.message.Activity);
 
-                        console.log(`데이터 확인: Place(${hasPlace}), F&B(${hasFnB}), Activity(${hasActivity})`);
+                        console.log(
+                          `데이터 확인: Place(${hasPlace}), F&B(${hasFnB}), Activity(${hasActivity})`
+                        );
 
                         if (hasPlace || hasFnB || hasActivity) {
-                          console.log('콘텐츠 데이터 유효함 ✓');
+                          console.log("콘텐츠 데이터 유효함 ✓");
                         } else {
-                          console.warn('메시지 필드는 있지만 필요한 카테고리 데이터가 없습니다!');
+                          console.warn(
+                            "메시지 필드는 있지만 필요한 카테고리 데이터가 없습니다!"
+                          );
                         }
                       } else {
-                        console.warn('메시지 필드가 없습니다!');
+                        console.warn("메시지 필드가 없습니다!");
                       }
                     }
 
                     // 데이터 저장
-                    await AsyncStorage.setItem(messageUniqueId, JSON.stringify(completeData));
-                    console.log('응답 데이터 저장 완료:', messageUniqueId);
+                    await AsyncStorage.setItem(
+                      messageUniqueId,
+                      JSON.stringify(completeData)
+                    );
+                    console.log("응답 데이터 저장 완료:", messageUniqueId);
 
                     // 활성 메시지 ID 저장
-                    await AsyncStorage.setItem('active_message_id', messageUniqueId);
-                    console.log('활성 메시지 ID 저장 완료:', messageUniqueId);
+                    await AsyncStorage.setItem(
+                      "active_message_id",
+                      messageUniqueId
+                    );
+                    console.log("활성 메시지 ID 저장 완료:", messageUniqueId);
 
                     // 화면 이동 준비
-                    let targetScreen = 'PersonalContent'; // 기본 이동 화면
+                    let targetScreen = "PersonalContent"; // 기본 이동 화면
 
                     // 카테고리에 따른 화면 설정
-                    const effectiveCategory = completeData.category || responseCategory;
-                    if (effectiveCategory === 'historical') {
-                      targetScreen = 'HistoryCulture';
-                    } else if (effectiveCategory === 'contents') {
-                      targetScreen = 'PersonalContent';
-                    } else if (effectiveCategory === 'preparation') {
+                    const effectiveCategory =
+                      completeData.category || responseCategory;
+                    if (effectiveCategory === "historical") {
+                      targetScreen = "HistoryCulture";
+                    } else if (effectiveCategory === "contents") {
+                      targetScreen = "PersonalContent";
+                    } else if (effectiveCategory === "preparation") {
                       // 준비물 카테고리인 경우 PrepareScreen으로 이동
-                      console.log('준비물 카테고리 - PrepareScreen으로 이동');
+                      console.log("준비물 카테고리 - PrepareScreen으로 이동");
 
                       // 이미 저장된 동일한 데이터가 있는지 확인
                       const allKeys = await AsyncStorage.getAllKeys();
-                      const prepKeys = allKeys.filter(key => key.startsWith('prep_data_'));
+                      const prepKeys = allKeys.filter((key) =>
+                        key.startsWith("prep_data_")
+                      );
                       let existingDataKey = null;
                       let existingData = null;
 
                       // 데이터 찾기
                       if (prepKeys.length > 0) {
-                        console.log(`${prepKeys.length}개의 준비물 데이터 찾음, 일치하는 데이터 검색 중...`);
+                        console.log(
+                          `${prepKeys.length}개의 준비물 데이터 찾음, 일치하는 데이터 검색 중...`
+                        );
 
                         for (const key of prepKeys) {
                           try {
-                            const storedDataStr = await AsyncStorage.getItem(key);
+                            const storedDataStr = await AsyncStorage.getItem(
+                              key
+                            );
                             if (storedDataStr) {
                               const storedData = JSON.parse(storedDataStr);
 
                               // message 필드 비교 (내용 기반 비교)
-                              if (storedData.message && completeData.message &&
-                                JSON.stringify(storedData.message) === JSON.stringify(completeData.message)) {
+                              if (
+                                storedData.message &&
+                                completeData.message &&
+                                JSON.stringify(storedData.message) ===
+                                  JSON.stringify(completeData.message)
+                              ) {
                                 console.log(`일치하는 데이터 찾음: ${key}`);
                                 existingDataKey = key;
                                 existingData = storedData;
@@ -494,11 +614,16 @@ export default function MainScreen() {
                               }
 
                               // 메시지 필드가 일치하지 않는 경우 요약 내용과 카테고리로 비교
-                              if (!existingData &&
-                                storedData.summary && completeData.summary &&
-                                storedData.category === 'preparation' &&
-                                storedData.summary === completeData.summary) {
-                                console.log(`요약 내용이 일치하는 데이터 찾음: ${key}`);
+                              if (
+                                !existingData &&
+                                storedData.summary &&
+                                completeData.summary &&
+                                storedData.category === "preparation" &&
+                                storedData.summary === completeData.summary
+                              ) {
+                                console.log(
+                                  `요약 내용이 일치하는 데이터 찾음: ${key}`
+                                );
                                 existingDataKey = key;
                                 existingData = storedData;
                                 break;
@@ -515,12 +640,14 @@ export default function MainScreen() {
 
                       if (existingData) {
                         // 기존 데이터 사용
-                        console.log('기존 데이터 사용:', existingDataKey);
+                        console.log("기존 데이터 사용:", existingDataKey);
                         dataToUse = existingData;
-                        timestampToUse = existingData.timestamp || parseInt(existingDataKey.replace('prep_data_', ''));
+                        timestampToUse =
+                          existingData.timestamp ||
+                          parseInt(existingDataKey.replace("prep_data_", ""));
                       } else {
                         // 새 데이터 저장
-                        console.log('새 데이터 저장');
+                        console.log("새 데이터 저장");
                         const timestamp = Date.now();
                         const preparationDataKey = `prep_data_${timestamp}`;
 
@@ -529,28 +656,43 @@ export default function MainScreen() {
                           ...completeData,
                           timestamp,
                           timestampStr: new Date(timestamp).toLocaleString(),
-                          key: preparationDataKey
+                          key: preparationDataKey,
                         };
 
                         // 향상된 데이터로 저장
-                        await AsyncStorage.setItem(preparationDataKey, JSON.stringify(enhancedData));
-                        await AsyncStorage.setItem('latest_preparation_data_key', preparationDataKey);
-                        await AsyncStorage.setItem('preparation_data_exists', 'true');
-                        await AsyncStorage.setItem('preparation_data_timestamp', timestamp.toString());
+                        await AsyncStorage.setItem(
+                          preparationDataKey,
+                          JSON.stringify(enhancedData)
+                        );
+                        await AsyncStorage.setItem(
+                          "latest_preparation_data_key",
+                          preparationDataKey
+                        );
+                        await AsyncStorage.setItem(
+                          "preparation_data_exists",
+                          "true"
+                        );
+                        await AsyncStorage.setItem(
+                          "preparation_data_timestamp",
+                          timestamp.toString()
+                        );
 
                         dataToUse = enhancedData;
                         timestampToUse = timestamp;
                       }
 
                       // 항상 가장 최근 데이터로 travel_essentials_data 업데이트
-                      await AsyncStorage.setItem('travel_essentials_data', JSON.stringify(dataToUse));
+                      await AsyncStorage.setItem(
+                        "travel_essentials_data",
+                        JSON.stringify(dataToUse)
+                      );
 
                       // PrepareScreen으로 이동, 자동 모달 표시 플래그 추가
-                      navigation.navigate('PrepareTravels', {
+                      navigation.navigate("PrepareTravels", {
                         messageData: dataToUse,
                         messageId: messageUniqueId,
                         autoShowModal: true, // 자동으로 모달 표시하기 위한 플래그
-                        timestamp: timestampToUse // 타임스탬프 전달
+                        timestamp: timestampToUse, // 타임스탬프 전달
                       });
                       return;
                     }
@@ -558,27 +700,37 @@ export default function MainScreen() {
                     // 이동할 화면 파라미터 설정 (완전한 데이터 전달)
                     const navigationParams = {
                       messageData: completeData,
-                      messageId: messageUniqueId
+                      messageId: messageUniqueId,
                     };
 
-                    console.log(`이동할 화면: ${targetScreen}, 메시지ID: ${messageUniqueId}`);
+                    console.log(
+                      `이동할 화면: ${targetScreen}, 메시지ID: ${messageUniqueId}`
+                    );
 
                     // 화면 이동
                     navigation.navigate(targetScreen, navigationParams);
                   } catch (error) {
-                    console.error('View more details 처리 중 오류:', error);
+                    console.error("View more details 처리 중 오류:", error);
 
                     // 오류 발생 시 기본 메시지 텍스트 사용
-                    const fallbackData = message.text || { text: '데이터 없음' };
+                    const fallbackData = message.text || {
+                      text: "데이터 없음",
+                    };
 
                     // 현재 메시지 저장
-                    await AsyncStorage.setItem(messageUniqueId, JSON.stringify(fallbackData));
-                    await AsyncStorage.setItem('active_message_id', messageUniqueId);
+                    await AsyncStorage.setItem(
+                      messageUniqueId,
+                      JSON.stringify(fallbackData)
+                    );
+                    await AsyncStorage.setItem(
+                      "active_message_id",
+                      messageUniqueId
+                    );
 
                     // 기본 화면으로 이동
-                    navigation.navigate('PersonalContent', {
+                    navigation.navigate("PersonalContent", {
                       messageData: fallbackData,
-                      messageId: messageUniqueId
+                      messageId: messageUniqueId,
                     });
                   }
                 };
@@ -614,8 +766,8 @@ export default function MainScreen() {
               />
             </LinearGradient>
             <View style={styles.greetingContainer}>
-              <Text style={styles.greeting}>Welcome back,</Text>
-              <Text style={styles.nickname}>Nickname</Text>
+              <Text style={styles.greeting}>Welcome,</Text>
+              <Text style={styles.nickname}>User</Text>
             </View>
           </View>
 
@@ -749,9 +901,9 @@ export default function MainScreen() {
       ) : (
         // 채팅 인터페이스 UI
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.chatContainer}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 20}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 20}
         >
           <ScrollView
             ref={scrollViewRef}
@@ -766,12 +918,22 @@ export default function MainScreen() {
               <View style={styles.loadingContainer}>
                 <View style={styles.botProfileContainer}>
                   <Image
-                    source={require('../assets/figma_images/trabuddy_face.png')}
+                    source={require("../assets/figma_images/trabuddy_face.png")}
                     style={styles.botProfileImage}
                   />
                 </View>
-                <View style={[styles.messageBubble, styles.botMessageBubble, styles.loadingBubble]}>
-                  <ActivityIndicator size="small" color="#40ABE5" style={styles.loadingIndicator} />
+                <View
+                  style={[
+                    styles.messageBubble,
+                    styles.botMessageBubble,
+                    styles.loadingBubble,
+                  ]}
+                >
+                  <ActivityIndicator
+                    size="small"
+                    color="#40ABE5"
+                    style={styles.loadingIndicator}
+                  />
                   <Text style={styles.loadingText}>답변 작성 중...</Text>
                 </View>
               </View>
@@ -991,23 +1153,23 @@ const styles = StyleSheet.create({
 
   // 에러 메시지 스타일
   errorMessageBubble: {
-    backgroundColor: '#FFEBEE',
-    borderColor: '#FFCDD2',
+    backgroundColor: "#FFEBEE",
+    borderColor: "#FFCDD2",
   },
   errorMessageText: {
-    color: '#D32F2F',
+    color: "#D32F2F",
   },
 
   // 로딩 표시 스타일
   loadingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   loadingBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
@@ -1015,14 +1177,14 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   loadingText: {
-    fontFamily: 'Outfit',
+    fontFamily: "Outfit",
     fontSize: 14,
-    color: '#555',
+    color: "#555",
   },
 
   // 이미지 스타일
   messageImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 10,
     marginTop: 10,
@@ -1031,42 +1193,42 @@ const styles = StyleSheet.create({
 
   // 카테고리 스타일
   categoryContainer: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: "#E3F2FD",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
     marginTop: 8,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   categoryText: {
     fontSize: 12,
-    fontFamily: 'Outfit',
+    fontFamily: "Outfit",
     color: COLORS.primaryDark,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   // TTS 버튼 스타일
   ttsButton: {
     padding: 6,
     borderRadius: 15,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: "#E3F2FD",
     marginLeft: 8,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     borderWidth: 1,
-    borderColor: '#BBDEFB',
+    borderColor: "#BBDEFB",
   },
 
   // 메시지 내용 컨테이너 스타일
   messageContentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
   },
 
   // 이미지 컨테이너 스타일
   imageContainer: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 10,
     marginTop: 10,
@@ -1083,7 +1245,7 @@ const styles = StyleSheet.create({
     marginLeft: 48, // 프로필 이미지 너비 + 간격과 동일하게 맞춤 (40px + 8px)
     marginTop: 8,
     marginBottom: 16,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     borderWidth: 1,
     borderColor: "#EEEEEE", // AI 메시지와 동일한 테두리 색상
     shadowColor: COLORS.shadow,
@@ -1095,9 +1257,9 @@ const styles = StyleSheet.create({
     maxWidth: "75%",
   },
   viewMoreText: {
-    fontFamily: 'Outfit',
+    fontFamily: "Outfit",
     fontSize: 16,
-    color: '#40ABE5', // 버튼임을 알 수 있도록 파란색 유지
+    color: "#40ABE5", // 버튼임을 알 수 있도록 파란색 유지
   },
 
   // AI message wrapper (바깥쪽 컨테이너)
