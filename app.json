@@ -13,24 +13,45 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "package": "com.Trabuddy"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "마이크 접근을 허용해주세요."
+        }
+      ]
     ],
     "assets": [
       "./assets/fonts/OriginalSurfer/",
       "./assets/fonts/Outfit/"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a6629f55-0af0-4ee8-b6c4-ee65859bf4d5"
+      }
+    }
   }
 }

@@ -1,22 +1,91 @@
-import { View, Text, StyleSheet, TouchableOpacity, Keyboard, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Keyboard,
+  ActivityIndicator,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { TextInput } from "react-native";
-import { useState } from "react";
+import { TextInput, Alert } from "react-native";
+import { useState, useEffect, useRef } from "react";
 import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 추가
 import { useNavigation, useRoute } from "@react-navigation/native"; // 네비게이션 추가
+import * as FileSystem from "expo-file-system";
+import { Audio } from "expo-av";
 
 export default function Footer() {
-  const [message, setMessage] = useState('');
-  const { addMessage, isLoading } = useChat(); // 채팅 컨텍스트에서 함수와 상태 가져오기
+  const [message, setMessage] = useState("");
+  const { addMessage, isLoading } = useChat(); // currentSessionId 추가
   const navigation = useNavigation(); // 네비게이션 객체
   const route = useRoute(); // 현재 경로
 
+  const recordingRef = useRef(null);
+  const [recording, setRecording] = useState(false);
+
+  const handleVoiceInput = async () => {
+    try {
+      if (!recording) {
+        // 🎤 녹음 시작
+        const permission = await Audio.requestPermissionsAsync();
+        if (permission.status !== "granted") {
+          console.log("⛔ 마이크 권한이 필요합니다.");
+          return;
+        }
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+        recordingRef.current = recording;
+        setRecording(recording);
+        console.log("🎙️ 녹음 시작");
+      } else {
+        // ⏹️ 녹음 중이면 종료 + base64 변환
+        await recordingRef.current.stopAndUnloadAsync();
+        const uri = recordingRef.current.getURI();
+        console.log("✅ 녹음 종료: ", uri);
+        setRecording(null);
+
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        console.log("📦 Base64 (앞부분):", base64.slice(0, 100) + "...");
+        // server에 전송
+        const response = await fetch(
+          `http://3.106.58.224:3000/speech/transcribe`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ base64Audio: base64 }),
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+        // 5) 서버 응답 저장
+        const data = await response.json();
+        console.log("🎧 변환된 텍스트:", data.response);
+        setMessage(data.response);
+      }
+    } catch (error) {
+      console.error("❗ handleVoiceInput 오류:", error);
+    }
+  };
+
   const handleSendMessage = () => {
-    if (message.trim() === '' || isLoading) return;
+    if (message.trim() === "" || isLoading) return;
 
     // 메시지 전송 및 입력창 초기화
     addMessage(message);
-    setMessage('');
+    setMessage("");
 
     // 키보드 내리기
     Keyboard.dismiss();
@@ -30,14 +99,6 @@ export default function Footer() {
     }
   };
 
-  const handleVoiceInput = () => {
-    // 음성 입력 기능 구현 (향후 구현)
-    console.log('Voice input pressed');
-
-    // 키보드가 열려있다면 닫기
-    Keyboard.dismiss();
-  };
-
   return (
     <View style={styles.footer}>
       <View style={styles.inputContainer}>
@@ -45,7 +106,9 @@ export default function Footer() {
           <View style={styles.PromptInput}>
             <TextInput
               style={styles.textInput}
-              placeholder={isLoading ? "응답을 기다리는 중..." : "Type your message..."}
+              placeholder={
+                isLoading ? "응답을 기다리는 중..." : "Type your message..."
+              }
               placeholderTextColor={isLoading ? "#999" : "#888"}
               value={message}
               onChangeText={setMessage}
