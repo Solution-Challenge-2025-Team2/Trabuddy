@@ -670,7 +670,8 @@ export const ChatProvider = ({ children }) => {
                                     category: messageObj ? messageObj.category : msg.category
                                 },
                                 isUser: msg.role === 'user',
-                                timestamp: msg.createdAt
+                                timestamp: msg.createdAt,
+                                fromSavedSession: true  // 저장된 세션에서 불러온 메시지 표시
                             };
                         }
 
@@ -679,7 +680,8 @@ export const ChatProvider = ({ children }) => {
                             id: msg.id.toString(),
                             text: msg.message,
                             isUser: msg.role === 'user',
-                            timestamp: msg.createdAt
+                            timestamp: msg.createdAt,
+                            fromSavedSession: true  // 저장된 세션에서 불러온 메시지 표시
                         };
                     });
 

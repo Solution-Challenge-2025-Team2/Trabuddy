@@ -31,9 +31,26 @@ export default function LoginScreen({ navigation }) {
   const [idCheckMessage, setIdCheckMessage] = useState("");
   const [isIdAvailable, setIsIdAvailable] = useState(false);
   const [isCheckingId, setIsCheckingId] = useState(false);
-  const { resetChat, clearChatOnly, setIsLoggedIn } = useChat(); // setIsLoggedIn 추가
+  const { resetChat, clearChatOnly, setIsLoggedIn, isLoggedIn } = useChat(); // isLoggedIn 추가
 
   const pwdRef = useRef(null); // 비밀번호 입력 필드 참조
+
+  // 이미 로그인한 사용자가 로그인 페이지 접근 시 메인 페이지로 리디렉션
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem("access_token");
+        if (token) {
+          console.log("이미 로그인된 사용자가 로그인 페이지에 접근 시도, 메인으로 리디렉션");
+          navigation.replace("Main");
+        }
+      } catch (error) {
+        console.error("로그인 상태 확인 오류:", error);
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigation]);
 
   useEffect(() => {
     if (pwdRef.current) {
@@ -49,9 +66,69 @@ export default function LoginScreen({ navigation }) {
     setConfirmPassword("");
   };
 
+  // 모든 사용자 관련 데이터 삭제 함수
+  const clearAllUserData = async () => {
+    try {
+      // 필수 키 목록 (직접 삭제할 중요 키들)
+      const keysToRemove = [
+        // 채팅 데이터 관련
+        "active_message_id",
+        "last_response_data",
+
+        // 준비물 데이터 관련
+        "travel_essentials_data",
+        "travel_essentials_destination",
+        "travel_essentials_startDate",
+        "travel_essentials_endDate",
+        "latest_preparation_data_key",
+        "preparation_data_exists",
+        "preparation_data_timestamp",
+
+        // 역사/문화 데이터 관련
+        "historical_culture_data",
+        "historical_data_exists",
+        "historical_data_timestamp",
+        "latest_historical_data_key"
+      ];
+
+      // 필수 키 삭제
+      for (const key of keysToRemove) {
+        await AsyncStorage.removeItem(key);
+      }
+
+      // 모든 키 가져오기 (동적으로 생성된 키 삭제용)
+      const allKeys = await AsyncStorage.getAllKeys();
+
+      // 특정 패턴의 키들 찾기 (message_, response_, prep_data_ 등으로 시작하는 키)
+      const dynamicKeys = allKeys.filter(
+        (key) =>
+          key.startsWith("message_") ||
+          key.startsWith("response_") ||
+          key.startsWith("prep_data_") ||
+          key.startsWith("content_") ||
+          key.startsWith("preparation_") ||
+          key.startsWith("hist_data_") ||
+          key.startsWith("historical_")
+      );
+
+      // 로그 확인
+      console.log(`총 ${dynamicKeys.length}개의 동적 키를 삭제합니다.`);
+
+      // 동적 키들 삭제
+      if (dynamicKeys.length > 0) {
+        await AsyncStorage.multiRemove(dynamicKeys);
+      }
+
+      console.log("로그인 전 모든 사용자 데이터가 성공적으로 삭제되었습니다.");
+    } catch (error) {
+      console.error("데이터 삭제 중 오류:", error);
+      // 오류가 발생해도 로그인 프로세스는 계속 진행
+    }
+  };
+
   const handleCheckDuplicate = async () => {
     if (!username) {
-      setIdCheckMessage("ID를 입력하세요.");
+      setIdCheckMessage("Please enter ID.");
       setIsIdAvailable(false);
       return;
     }
@@ -71,11 +148,11 @@ export default function LoginScreen({ navigation }) {
         setIdCheckMessage("Available ID");
         setIsIdAvailable(true);
       } else {
-        setIdCheckMessage("Duplicated ID. Choose another one.");
+        setIdCheckMessage("Server error. Please try again.");
         setIsIdAvailable(false);
       }
     } catch (error) {
-      setIdCheckMessage("서버 오류. 다시 시도하세요.");
+      setIdCheckMessage("Server error. Please try again.");
       setIsIdAvailable(false);
     } finally {
       setIsCheckingId(false);
@@ -84,15 +161,15 @@ export default function LoginScreen({ navigation }) {
 
   const handleSignUp = async () => {
     if (!username || !password || !confirmPassword) {
-      Alert.alert("오류", "모든 필드를 입력해주세요");
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("오류", "비밀번호가 일치하지 않습니다");
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
     if (!isIdAvailable) {
-      Alert.alert("오류", "ID 중복확인을 해주세요");
+      Alert.alert("Error", "Please check for ID duplication");
       return;
     }
     setIsLoading(true);
@@ -104,14 +181,14 @@ export default function LoginScreen({ navigation }) {
       });
       const data = await response.json();
       if (data.message === "signup success") {
-        Alert.alert("성공", "회원가입이 완료되었습니다. 로그인해주세요", [
-          { text: "확인", onPress: () => setIsLogin(true) },
+        Alert.alert("Success", "Registration complete. Please log in.", [
+          { text: "OK", onPress: () => setIsLogin(true) },
         ]);
       } else {
-        Alert.alert("오류", data.message || "회원가입 실패");
+        Alert.alert("Error", data.message || "Registration failed");
       }
     } catch (error) {
-      Alert.alert("오류", "회원가입 중 문제가 발생했습니다");
+      Alert.alert("Error", "There was a problem with registration");
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +196,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert("오류", "아이디와 비밀번호를 모두 입력해주세요");
+      Alert.alert("Error", "Please enter both ID and password");
       return;
     }
     setIsLoading(true);
@@ -146,6 +223,9 @@ export default function LoginScreen({ navigation }) {
           data.access_token.substring(0, 20) + "..."
         );
         console.log("세션ID 포함 여부:", data.sessionId ? "포함" : "미포함");
+
+        // 로그인 전 모든 사용자 관련 데이터 삭제
+        await clearAllUserData();
 
         // 로그인 상태 업데이트 - 이 부분을 먼저 실행
         setIsLoggedIn(true);
@@ -191,9 +271,9 @@ export default function LoginScreen({ navigation }) {
           Speech.stop();
         }
 
-        Alert.alert("성공", "로그인이 완료되었습니다", [
+        Alert.alert("Success", "Login successful", [
           {
-            text: "확인",
+            text: "OK",
             onPress: () => {
               Keyboard.dismiss();
               setTimeout(() => {
@@ -204,11 +284,11 @@ export default function LoginScreen({ navigation }) {
         ]);
       } else {
         console.log("로그인 실패: 토큰 없음");
-        Alert.alert("오류", "아이디 또는 비밀번호가 일치하지 않습니다");
+        Alert.alert("Error", "ID or password does not match");
       }
     } catch (error) {
       console.error("로그인 요청 오류:", error);
-      Alert.alert("오류", "로그인 중 문제가 발생했습니다");
+      Alert.alert("Error", "There was a problem during login");
     } finally {
       setIsLoading(false);
     }

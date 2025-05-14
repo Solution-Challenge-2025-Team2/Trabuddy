@@ -25,7 +25,7 @@ import Frame from "../Frame";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendChatMessage, sendGuestChatMessage } from "../services/chatService";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.7;
 const CARD_HEIGHT = CARD_WIDTH * 0.8;
 
@@ -85,10 +85,10 @@ const PreparationNotification = ({ onPress, onDismiss }) => {
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ flex: 1 }}>
           <Text style={{ color: '#fff', fontFamily: 'Outfit', fontSize: 16, fontWeight: '500' }}>
-            새로운 준비물 정보가 있습니다
+            New preparation information available
           </Text>
           <Text style={{ color: '#e0f0ff', fontFamily: 'Outfit', fontSize: 14, marginTop: 4 }}>
-            터치하여 자세히 보기
+            Tap to see details
           </Text>
         </View>
         <TouchableOpacity onPress={handleDismiss} style={{ padding: 5 }}>
@@ -155,7 +155,8 @@ export default function PrepareScreen({ navigation, route }) {
     endDate: "2025-05-10",
   });
   const [selectionMode, setSelectionMode] = useState("none"); // 'none', 'start', 'end'
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const modalPosition = useRef(new Animated.Value(0)).current;
 
   // 여행 준비물 관련 상태
   const [isLoadingEssentials, setIsLoadingEssentials] = useState(false);
@@ -226,20 +227,40 @@ export default function PrepareScreen({ navigation, route }) {
   // 준비물 데이터가 변경될 때 애니메이션 효과 적용
   useEffect(() => {
     if (essentialsData) {
-      Animated.sequence([
-        Animated.timing(slideTransition, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true
-        }),
-        Animated.timing(slideTransition, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true
-        })
-      ]).start();
+      // 애니메이션 제거
+      // Previous & Next 버튼으로 이동할 때는 애니메이션을 적용하지 않음
     }
   }, [currentIndex, essentialsData]);
+
+  // 모달 드래그 제스처 핸들러 - 상단 핸들 영역에서만 작동하도록 수정
+  const modalPanResponder = useRef(
+    Platform.OS === 'web' ? {} :
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          modalPosition.setValue(0);
+        },
+        onPanResponderMove: (event, gestureState) => {
+          // 아래로 드래그 할 때만 값 변경 (위로는 더 이상 올라가지 않도록)
+          if (gestureState.dy > 0) {
+            modalPosition.setValue(gestureState.dy);
+          }
+        },
+        onPanResponderRelease: (event, gestureState) => {
+          // 일정 거리 이상 드래그하면 닫기, 아니면 원래 위치로
+          if (gestureState.dy > 100) { // 더 민감하게 조정
+            closeResultsModal();
+          } else {
+            Animated.spring(modalPosition, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 40,
+              friction: 8
+            }).start();
+          }
+        }
+      })
+  ).current;
 
   // 준비물 데이터가 변경된 경우 알림 표시
   useEffect(() => {
@@ -256,8 +277,9 @@ export default function PrepareScreen({ navigation, route }) {
             if (timestamp > lastDataTimestamp) {
               console.log('새 준비물 데이터 감지:', timestamp, '>', lastDataTimestamp);
               setLastDataTimestamp(timestamp);
-              setHasNewData(true);
-              setShowNotification(true);
+              // 알림 표시 기능을 제거
+              // setHasNewData(true);
+              // setShowNotification(true);
             }
           }
         } catch (error) {
@@ -477,12 +499,26 @@ export default function PrepareScreen({ navigation, route }) {
     handleRouteParams();
   }, [route.params]);
 
-  // 모달이 닫힐 때 slideAnim 값 초기화
+  // 모달 애니메이션을 위한 상태
   useEffect(() => {
-    if (!modalVisible) {
-      slideAnim.setValue(300);
+    if (showResultsModal) {
+      // 모달이 나타날 때 애니메이션
+      slideAnim.setValue(SCREEN_HEIGHT); // 화면 높이만큼 아래에서 시작
+      modalPosition.setValue(0); // 모달 위치 초기화
+
+      // 약간의 지연 후 애니메이션 실행 (레이아웃 계산 시간 확보)
+      setTimeout(() => {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 30, // 낮은 장력
+          friction: 8, // 높은 마찰력
+          restDisplacementThreshold: 10,
+          restSpeedThreshold: 10
+        }).start();
+      }, 50);
     }
-  }, [modalVisible]);
+  }, [showResultsModal]);
 
   // 날짜 표시 형식 변환 함수
   const formatDisplayDate = (dateString) => {
@@ -579,14 +615,12 @@ export default function PrepareScreen({ navigation, route }) {
 
   // 날짜 선택 처리 함수 - useCallback으로 메모이제이션
   const handleDayPress = useCallback(
-    (day) => {
-      const selectedDay = day.dateString;
-
+    (dateString) => {
       // 선택 모드에 따라 다르게 처리
       if (selectionMode === "none" || selectionMode === "start") {
         // 시작일 선택 모드
         const newSelectedDates = {
-          [selectedDay]: {
+          [dateString]: {
             startingDay: true,
             endingDay: true,
             color: FIGMA_COLORS.accentBlue,
@@ -596,7 +630,7 @@ export default function PrepareScreen({ navigation, route }) {
 
         setSelectedDates(newSelectedDates);
         setDateRange({
-          startDate: selectedDay,
+          startDate: dateString,
           endDate: null,
         });
         setSelectionMode("end"); // 다음은 종료일 선택
@@ -605,9 +639,9 @@ export default function PrepareScreen({ navigation, route }) {
         const startDay = dateRange.startDate;
 
         // 시작일보다 이전 날짜를 선택한 경우
-        if (selectedDay < startDay) {
+        if (dateString < startDay) {
           // 시작일과 종료일을 바꿈
-          const newStartDate = selectedDay;
+          const newStartDate = dateString;
           const newEndDate = startDay;
 
           const newSelectedDates = createDateRange(newStartDate, newEndDate);
@@ -616,18 +650,18 @@ export default function PrepareScreen({ navigation, route }) {
             startDate: newStartDate,
             endDate: newEndDate,
           });
-        } else if (selectedDay > startDay) {
+        } else if (dateString > startDay) {
           // 정상적으로 종료일 선택
-          const newSelectedDates = createDateRange(startDay, selectedDay);
+          const newSelectedDates = createDateRange(startDay, dateString);
           setSelectedDates(newSelectedDates);
           setDateRange({
             startDate: startDay,
-            endDate: selectedDay,
+            endDate: dateString,
           });
         } else {
           // 시작일과 같은 날짜 선택 (하루 선택)
           setSelectedDates({
-            [selectedDay]: {
+            [dateString]: {
               startingDay: true,
               endingDay: true,
               color: FIGMA_COLORS.accentBlue,
@@ -635,8 +669,8 @@ export default function PrepareScreen({ navigation, route }) {
             },
           });
           setDateRange({
-            startDate: selectedDay,
-            endDate: selectedDay,
+            startDate: dateString,
+            endDate: dateString,
           });
         }
 
@@ -653,7 +687,7 @@ export default function PrepareScreen({ navigation, route }) {
         // 바로 첫 선택을 적용 (재귀 호출 대신 직접 처리)
         setTimeout(() => {
           const newSelectedDates = {
-            [selectedDay]: {
+            [dateString]: {
               startingDay: true,
               endingDay: true,
               color: FIGMA_COLORS.accentBlue,
@@ -662,7 +696,7 @@ export default function PrepareScreen({ navigation, route }) {
           };
           setSelectedDates(newSelectedDates);
           setDateRange({
-            startDate: selectedDay,
+            startDate: dateString,
             endDate: null,
           });
           setSelectionMode("end");
@@ -771,36 +805,15 @@ export default function PrepareScreen({ navigation, route }) {
     if (!essentialsData) return null;
 
     return (
-      <Animated.View
-        style={{
-          flex: 1,
-          opacity: slideTransition.interpolate({
-            inputRange: [0, 1],
-            outputRange: [1, 0.7]
-          }),
-          transform: [
-            {
-              translateX: slideTransition.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, currentIndex > 0 ? 100 : -100]
-              })
-            }
-          ]
-        }}
-        {...panResponder.panHandlers}
-      >
+      <View style={{ flex: 1 }}>
         <ScrollView
           style={styles.essentialsScrollView}
           contentContainerStyle={styles.essentialsContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* 타임스탬프 표시 */}
-          <View style={styles.timestampContainer}>
-            <Text style={styles.timestampText}>
-              {essentialsData.timestampStr || new Date().toLocaleString()}
-            </Text>
-          </View>
-
           {/* 요약 정보 표시 */}
           {essentialsData.summary && (
             <View style={styles.summaryContainer}>
@@ -819,6 +832,7 @@ export default function PrepareScreen({ navigation, route }) {
                   showsHorizontalScrollIndicator={false}
                   style={styles.categoryScrollView}
                   contentContainerStyle={styles.categoryScrollContent}
+                  nestedScrollEnabled={true}
                 >
                   {essentialsData.message[category].map((item, index) => (
                     <TouchableOpacity
@@ -842,12 +856,12 @@ export default function PrepareScreen({ navigation, route }) {
                   ))}
                 </ScrollView>
               ) : (
-                <Text style={styles.noItemsText}>해당 카테고리에 준비물이 없습니다.</Text>
+                <Text style={styles.noItemsText}>No items in this category.</Text>
               )}
             </View>
           ))}
         </ScrollView>
-      </Animated.View>
+      </View>
     );
   };
 
@@ -972,10 +986,21 @@ export default function PrepareScreen({ navigation, route }) {
 
   // 준비물 모달 닫기
   const closeResultsModal = () => {
-    setShowResultsModal(false);
-    setSavedEssentialsExist(true); // 데이터가 생성되었으므로 상태 업데이트
+    // 모달이 사라지는 애니메이션 실행
+    Animated.timing(slideAnim, {
+      toValue: SCREEN_HEIGHT, // 화면 높이만큼 아래로 사라짐
+      duration: 300,
+      useNativeDriver: true
+    }).start(() => {
+      // 애니메이션 완료 후 모달 숨김
+      setShowResultsModal(false);
+      setSavedEssentialsExist(true); // 데이터가 생성되었으므로 상태 업데이트
+      // 모달 위치 초기화
+      modalPosition.setValue(0);
+    });
   };
 
+  // 모달 관련 JSX 부분 업데이트
   return (
     <LinearGradient
       colors={[
@@ -987,8 +1012,8 @@ export default function PrepareScreen({ navigation, route }) {
       end={{ x: 0.5, y: 0.65 }}
     >
       <Frame>
-        {/* 새 준비물 데이터 알림 */}
-        {showNotification && hasNewData && (
+        {/* 새 준비물 데이터 알림 - 제거 */}
+        {/* {showNotification && hasNewData && (
           <PreparationNotification
             onPress={() => {
               setShowNotification(false);
@@ -996,7 +1021,7 @@ export default function PrepareScreen({ navigation, route }) {
             }}
             onDismiss={() => setShowNotification(false)}
           />
-        )}
+        )} */}
 
         <ScrollView
           style={styles.container}
@@ -1229,86 +1254,93 @@ export default function PrepareScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* 결과 모달 */}
+      {/* 준비물 결과 모달 */}
       <Modal
-        animationType="slide"
-        transparent={false}
+        animationType="none"
+        transparent={true}
         visible={showResultsModal}
         onRequestClose={closeResultsModal}
       >
-        <LinearGradient
-          colors={[FIGMA_COLORS.backgroundGradientStart, FIGMA_COLORS.backgroundGradientEnd]}
-          style={{ flex: 1 }}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.8 }}
-        >
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={closeResultsModal}
-              >
-                <Ionicons name="chevron-back" size={30} color="#000" />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Travel Essentials</Text>
-              <View style={styles.spacer} />
+        <View style={styles.modalOverlay}>
+          <Animated.View
+            style={[
+              styles.resultsModalContent,
+              {
+                transform: [
+                  { translateY: Animated.add(slideAnim, modalPosition) }
+                ]
+              }
+            ]}
+          >
+            <View {...modalPanResponder.panHandlers} style={styles.modalDragHandle}>
+              <View style={styles.modalHeaderBar} />
+              <Text style={styles.modalDragHint}>Drag down to close</Text>
             </View>
 
-            {/* 여러 목록 간 이동을 위한 네비게이션 */}
-            {allEssentialsData.length > 1 && (
-              <View style={styles.listNavigation}>
-                <TouchableOpacity
-                  style={[
-                    styles.navButton,
-                    currentIndex === 0 && styles.navButtonDisabled
-                  ]}
-                  onPress={goToPrevList}
-                  disabled={currentIndex === 0}
-                >
-                  <Ionicons
-                    name="chevron-back-circle"
-                    size={30}
-                    color={currentIndex === 0 ? '#ccc' : FIGMA_COLORS.accentBlue}
-                  />
-                </TouchableOpacity>
+            <View style={styles.modalContainer}>
+              {/* 여러 리스트 간 이동 네비게이션 (여러 데이터가 있는 경우) */}
+              {allEssentialsData.length > 1 && (
+                <View style={styles.listNavigation}>
+                  <View style={styles.navButtonContainer}>
+                    <TouchableOpacity
+                      style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
+                      onPress={goToPrevList}
+                      disabled={currentIndex === 0}
+                    >
+                      <Ionicons name="chevron-back" size={24} color={currentIndex === 0 ? "#ccc" : "#40ABE5"} />
+                      <Text style={[styles.navigationButtonText, currentIndex === 0 && { color: "#ccc" }]}>
+                        Previous
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-                <View style={styles.navInfoContainer}>
-                  <Text style={styles.navInfoText}>
-                    {currentIndex + 1} / {allEssentialsData.length}
+                  <View style={styles.navInfoContainer}>
+                    <Text style={styles.navInfoText}>
+                      {currentIndex + 1} / {allEssentialsData.length}
+                    </Text>
+                    {essentialsData && essentialsData.timestampStr && (
+                      <View style={styles.timestampContainer}>
+                        <Text style={styles.timestampText}>
+                          {essentialsData.timestampStr}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.navButtonContainer}>
+                    <TouchableOpacity
+                      style={[styles.navButton, currentIndex === allEssentialsData.length - 1 && styles.navButtonDisabled]}
+                      onPress={goToNextList}
+                      disabled={currentIndex === allEssentialsData.length - 1}
+                    >
+                      <Text style={[styles.navigationButtonText, currentIndex === allEssentialsData.length - 1 && { color: "#ccc" }]}>
+                        Next
+                      </Text>
+                      <Ionicons name="chevron-forward" size={24} color={currentIndex === allEssentialsData.length - 1 ? "#ccc" : "#40ABE5"} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* 기존 모달 내용 */}
+              {isLoadingEssentials ? (
+                // 로딩 인디케이터
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#40ABE5" />
+                  <Text style={styles.loadingText}>Loading travel essentials...</Text>
+                </View>
+              ) : essentialsData ? (
+                renderSwipeableContent()
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>
+                    No travel essentials data available.
                   </Text>
                 </View>
-
-                <TouchableOpacity
-                  style={[
-                    styles.navButton,
-                    currentIndex === allEssentialsData.length - 1 && styles.navButtonDisabled
-                  ]}
-                  onPress={goToNextList}
-                  disabled={currentIndex === allEssentialsData.length - 1}
-                >
-                  <Ionicons
-                    name="chevron-forward-circle"
-                    size={30}
-                    color={currentIndex === allEssentialsData.length - 1 ? '#ccc' : FIGMA_COLORS.accentBlue}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {isLoadingEssentials ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={FIGMA_COLORS.accentBlue} />
-                <Text style={styles.loadingText}>여행 준비물 목록을 가져오는 중...</Text>
-              </View>
-            ) : essentialsData ? (
-              renderSwipeableContent()
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>준비물 데이터를 불러올 수 없습니다.</Text>
-              </View>
-            )}
-          </SafeAreaView>
-        </LinearGradient>
+              )}
+            </View>
+          </Animated.View>
+        </View>
       </Modal>
 
       {/* 아이템 상세 모달 */}
@@ -1400,7 +1432,7 @@ const CustomDatePicker = React.memo(
           2,
           "0"
         )}-${String(day).padStart(2, "0")}`;
-        onDateSelect({ dateString });
+        onDateSelect(dateString);
       },
       [currentYear, currentMonth, onDateSelect]
     );
@@ -1535,7 +1567,7 @@ const CustomDatePicker = React.memo(
                 borderBottomRightRadius: 20,
               },
             ]}
-            onPress={() => handleDateSelect({ dateString: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` })}
+            onPress={() => handleDateSelect(day)}
           >
             <Text
               style={[styles.calendarDayText, isMarked && { color: "white" }]}
@@ -1804,9 +1836,9 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
     width: "85%",
@@ -1955,16 +1987,25 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 15,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   backButton: {
     padding: 5,
   },
+  modalHeaderText: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: 'Outfit',
+    fontSize: 20,
+    fontWeight: '600',
+    color: FIGMA_COLORS.primaryText,
+  },
   spacer: {
-    width: 40,
+    width: 30,
   },
   loadingContainer: {
     flex: 1,
@@ -1981,6 +2022,7 @@ const styles = StyleSheet.create({
   },
   essentialsScrollView: {
     flex: 1,
+    width: '100%',
   },
   essentialsContent: {
     padding: 16,
@@ -2134,19 +2176,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  navButtonContainer: {
+    width: 100, // 고정 너비
+    alignItems: 'flex-start',
+  },
   navButton: {
     padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   navButtonDisabled: {
     opacity: 0.5,
   },
   navInfoContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   navInfoText: {
     fontFamily: 'Outfit',
@@ -2156,12 +2206,49 @@ const styles = StyleSheet.create({
   },
   timestampContainer: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginTop: 3,
+    marginBottom: 0,
   },
   timestampText: {
     fontFamily: 'Outfit',
     fontSize: 12,
     color: FIGMA_COLORS.secondaryText,
+  },
+  resultsModalContent: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: SCREEN_HEIGHT * 0.85, // 화면 높이의 85%로 설정
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
+  },
+  modalDragHandle: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 12,
+    height: 50, // 명확한 높이 지정
+    marginBottom: 10, // 아래 간격 추가
+  },
+  modalHeaderBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  modalDragHint: {
+    fontSize: 12,
+    color: '#888',
+    fontFamily: 'Outfit',
+  },
+  navigationButtonText: {
+    fontFamily: 'Outfit',
+    fontSize: 16,
+    fontWeight: '500',
+    color: "#40ABE5",
+    marginHorizontal: 5,
   },
 });
 
