@@ -13,16 +13,31 @@ import { useChat } from "../context/ChatContext"; // 채팅 컨텍스트 추가
 import { useNavigation, useRoute } from "@react-navigation/native"; // 네비게이션 추가
 import * as FileSystem from "expo-file-system";
 import { Audio } from "expo-av";
+import { Animated, Easing } from "react-native"; // 애니메이션 추가
 
 export default function Footer() {
   const [message, setMessage] = useState("");
-  const { addMessage, isLoading } = useChat(); // currentSessionId 추가
+  const { addMessage, isLoading } = useChat();
   const navigation = useNavigation(); // 네비게이션 객체
   const route = useRoute(); // 현재 경로
 
   const recordingRef = useRef(null);
   const [recording, setRecording] = useState(false);
 
+  // 1. 자동 전송을 위한 ref 사용
+  const isAutoSending = useRef(false);
+
+  const scaleAnim = useRef(new Animated.Value(1)).current; // 애니메이션
+
+  // 2. message가 바뀌었을 때 자동 전송
+  useEffect(() => {
+    if (isAutoSending.current && message.trim() !== "") {
+      handleSendMessage();
+      isAutoSending.current = false;
+    }
+  }, [message]);
+
+  // 음성 버튼 클릭 시 호출 함수
   const handleVoiceInput = async () => {
     try {
       if (!recording) {
@@ -44,8 +59,42 @@ export default function Footer() {
         recordingRef.current = recording;
         setRecording(recording);
         console.log("🎙️ 녹음 시작");
+
+        // 타이머 설정 (7초 후 자동 종료)
+        setTimeout(async () => {
+          if (recordingRef.current) {
+            await recordingRef.current.stopAndUnloadAsync();
+            const uri = recordingRef.current.getURI();
+            console.log("✅ 타이머 종료로 녹음 종료: ", uri);
+            setRecording(null);
+
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+
+            console.log("📦 Base64 (앞부분):", base64.slice(0, 100) + "...");
+            // 서버에 전송
+            const response = await fetch(
+              `http://3.106.58.224:3000/speech/transcribe`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ base64Audio: base64 }),
+              }
+            );
+            if (!response.ok) {
+              throw new Error(`Server error: ${response.status}`);
+            }
+            // 5) 서버 응답 저장
+            const data = await response.json();
+            console.log("🎧 변환된 텍스트:", data.response);
+            setMessage(data.response);
+          }
+        }, 7000); // 7초 후 자동 종료
       } else {
-        // ⏹️ 녹음 중이면 종료 + base64 변환
+        // ⏹️ 녹음 종료 + base64 변환
         await recordingRef.current.stopAndUnloadAsync();
         const uri = recordingRef.current.getURI();
         console.log("✅ 녹음 종료: ", uri);
@@ -73,13 +122,38 @@ export default function Footer() {
         // 5) 서버 응답 저장
         const data = await response.json();
         console.log("🎧 변환된 텍스트:", data.response);
+
         setMessage(data.response);
+        isAutoSending.current = true; // 자동 전송 설정
       }
     } catch (error) {
       console.error("❗ handleVoiceInput 오류:", error);
     }
   };
+  // 음성 버튼 애니메이션
+  useEffect(() => {
+    if (recording) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.5,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      // 🔚 녹음 중이 아니면 애니메이션 중단 및 초기화
+      scaleAnim.setValue(1);
+    }
+  }, [recording]);
 
+  // 메시지 전송 버튼
   const handleSendMessage = () => {
     if (message.trim() === "" || isLoading) return;
 
@@ -102,7 +176,13 @@ export default function Footer() {
   return (
     <View style={styles.footer}>
       <View style={styles.inputContainer}>
-        <View style={[styles.promptBox, isLoading && styles.promptBoxDisabled]}>
+        <View
+          style={[
+            styles.promptBox,
+            isLoading && styles.promptBoxDisabled,
+            recording && { opacity: 0.3 },
+          ]}
+        >
           <View style={styles.PromptInput}>
             <TextInput
               style={styles.textInput}
@@ -113,7 +193,7 @@ export default function Footer() {
               value={message}
               onChangeText={setMessage}
               onSubmitEditing={handleSendMessage}
-              editable={!isLoading}
+              editable={!isLoading && !recording}
             />
           </View>
           <TouchableOpacity
@@ -128,14 +208,15 @@ export default function Footer() {
             )}
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.voiceButton, isLoading && styles.buttonDisabled]}
-          onPress={handleVoiceInput}
-          disabled={isLoading}
-        >
-          <MaterialIcons name="keyboard-voice" size={24} color="white" />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity
+            style={[styles.voiceButton, isLoading && styles.buttonDisabled]}
+            onPress={handleVoiceInput}
+            disabled={isLoading}
+          >
+            <MaterialIcons name="keyboard-voice" size={24} color="white" />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </View>
   );
