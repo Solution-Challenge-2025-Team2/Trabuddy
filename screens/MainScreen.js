@@ -571,7 +571,7 @@ export default function MainScreen() {
                     const effectiveCategory =
                       completeData.category || responseCategory;
                     if (effectiveCategory === "historical") {
-                      targetScreen = "HistoryCulture";
+                      targetScreen = "HistoryDetail";
                     } else if (effectiveCategory === "contents") {
                       targetScreen = "PersonalContent";
                     } else if (effectiveCategory === "preparation") {
@@ -766,8 +766,10 @@ export default function MainScreen() {
               />
             </LinearGradient>
             <View style={styles.greetingContainer}>
-              <Text style={styles.greeting}>Welcome,</Text>
-              <Text style={styles.nickname}>User</Text>
+              <Text style={styles.greeting}>Welcome!</Text>
+              <Text style={styles.welcomMessage}>
+                {`Let's make today\n a great travel day`}
+              </Text>
             </View>
           </View>
 
@@ -781,7 +783,7 @@ export default function MainScreen() {
                 {/* 역사/문화 아이콘 */}
                 <TouchableOpacity
                   style={styles.iconWrapper}
-                  onPress={() => navigateAndDismissKeyboard("HistoryCulture")}
+                  onPress={() => navigateAndDismissKeyboard("HistoryDetail")}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
@@ -847,7 +849,7 @@ export default function MainScreen() {
                 {/* 응급 상황 아이콘 */}
                 <TouchableOpacity
                   style={styles.iconWrapper}
-                  onPress={() => navigateAndDismissKeyboard("Emergency")}
+                  onPress={() => navigateAndDismissKeyboard("Problem")}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
@@ -862,7 +864,7 @@ export default function MainScreen() {
                       color={COLORS.white}
                     />
                   </LinearGradient>
-                  <Text style={styles.iconText}>Emergency</Text>
+                  <Text style={styles.iconText}>Problem</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -976,14 +978,14 @@ const styles = StyleSheet.create({
   greetingContainer: {
     marginLeft: 16,
   },
-  greeting: {
-    fontSize: 20,
+  welcomMessage: {
+    fontSize: 16,
     fontFamily: "Outfit",
     color: COLORS.textMedium,
     marginBottom: 2,
   },
-  nickname: {
-    fontSize: 32,
+  greeting: {
+    fontSize: 30,
     fontFamily: "Outfit",
     color: COLORS.textDark,
   },
