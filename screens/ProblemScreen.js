@@ -440,7 +440,10 @@ export default function EmergencyScreen() {
                                     <Text style={styles.cardDescription}>
                                       {step}
                                     </Text>
-                                    <TouchableOpacity onPress={() => speak(step)}>
+                                    <TouchableOpacity
+                                      onPress={() => speak(step)}
+                                      style={{ alignSelf: 'flex-end' }}
+                                    >
                                       <MaterialIcons
                                         name="volume-up"
                                         size={20}
@@ -457,7 +460,10 @@ export default function EmergencyScreen() {
                                     <Text style={styles.cardDescription}>
                                       {tip}
                                     </Text>
-                                    <TouchableOpacity onPress={() => speak(tip)}>
+                                    <TouchableOpacity
+                                      onPress={() => speak(tip)}
+                                      style={{ alignSelf: 'flex-end' }}
+                                    >
                                       <MaterialIcons
                                         name="volume-up"
                                         size={20}
@@ -489,7 +495,10 @@ export default function EmergencyScreen() {
                                     <Text style={styles.cardDescription}>
                                       {info}
                                     </Text>
-                                    <TouchableOpacity onPress={() => speak(info)}>
+                                    <TouchableOpacity
+                                      onPress={() => speak(info)}
+                                      style={{ alignSelf: 'flex-end' }}
+                                    >
                                       <MaterialIcons
                                         name="volume-up"
                                         size={20}
@@ -506,7 +515,10 @@ export default function EmergencyScreen() {
                                     <Text style={styles.cardDescription}>
                                       {step}
                                     </Text>
-                                    <TouchableOpacity onPress={() => speak(step)}>
+                                    <TouchableOpacity
+                                      onPress={() => speak(step)}
+                                      style={{ alignSelf: 'flex-end' }}
+                                    >
                                       <MaterialIcons
                                         name="volume-up"
                                         size={20}
@@ -625,6 +637,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000000",
     lineHeight: 24,
+    textAlign: "left",
+    width: "100%",
   },
   cardTitle: {
     fontFamily: "Outfit",
@@ -640,9 +654,10 @@ const styles = StyleSheet.create({
   },
   descriptionColumn: {
     flexDirection: "column",
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     gap: 6,
     marginBottom: 8,
+    width: "100%",
   },
   descriptionRow: {
     flexDirection: "row",
