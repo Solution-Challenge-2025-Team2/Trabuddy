@@ -1,6 +1,6 @@
 # Trabuddy
 
-<img src="./assets/Logo With Trabudddy.png" alt="Trabuddy Logo" width="300"/>
+<img src="./assets/Logo With Trabuddy.png" alt="Trabuddy Logo" width="300"/>
 
 ## 📱 Project Overview
 
