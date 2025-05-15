@@ -27,7 +27,7 @@ import { sendChatMessage, sendGuestChatMessage } from "../services/chatService";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.7;
-const CARD_HEIGHT = CARD_WIDTH * 0.8;
+const CARD_HEIGHT = CARD_WIDTH * 0.6;
 
 // 준비물 데이터 알림 메시지 컴포넌트
 const PreparationNotification = ({ onPress, onDismiss }) => {
@@ -121,26 +121,26 @@ const FIGMA_COLORS = {
 };
 
 // 추천 여행지 데이터
-const RECOMMENDED_PLACES = [
-  {
-    id: "1",
-    title: "Uyuni Salt Desert",
-    subInfo: "additional info",
-    image: require("../assets/figma_images/image_15_143_73.png"),
-  },
-  {
-    id: "2",
-    title: "Gyeongbokgound",
-    subInfo: "historical palace",
-    image: require("../assets/figma_images/image_16_143_67.png"),
-  },
-  {
-    id: "3",
-    title: "Jeju Island",
-    subInfo: "volcanic island",
-    image: { uri: "https://placehold.co/280x210/jeju/island" },
-  },
-];
+// const RECOMMENDED_PLACES = [
+//   {
+//     id: "1",
+//     title: "Uyuni Salt Desert",
+//     subInfo: "additional info",
+//     image: require("../assets/figma_images/image_15_143_73.png"),
+//   },
+//   {
+//     id: "2",
+//     title: "Gyeongbokgound",
+//     subInfo: "historical palace",
+//     image: require("../assets/figma_images/image_16_143_67.png"),
+//   },
+//   {
+//     id: "3",
+//     title: "Jeju Island",
+//     subInfo: "volcanic island",
+//     image: { uri: "https://placehold.co/280x210/jeju/island" },
+//   },
+// ];
 
 export default function PrepareScreen({ navigation, route }) {
   const [startDate, setStartDate] = useState("2025-05-01");
@@ -1119,7 +1119,7 @@ export default function PrepareScreen({ navigation, route }) {
           </View>
 
           {/* 추천 여행지 섹션 */}
-          <View style={styles.recommendedSection}>
+          {/* <View style={styles.recommendedSection}>
             <Text style={styles.sectionTitle}>Recommended</Text>
 
             <FlatList
@@ -1148,7 +1148,7 @@ export default function PrepareScreen({ navigation, route }) {
                 </TouchableOpacity>
               )}
             />
-          </View>
+          </View> */}
         </ScrollView>
       </Frame>
 
