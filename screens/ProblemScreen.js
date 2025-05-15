@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -16,10 +16,11 @@ import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { problemDescriptions } from "../data/ProblemDescriptions";
 import * as Speech from "expo-speech";
 import sos from "../data/SosNum.json";
+import { CountryPicker } from "react-native-country-codes-picker";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.95;
-const countryCode = "BH"; // 국가 코드 (예: "KR" 또는 "US")
+const defaultSosNum = { police: [], fire: [], ambulance: [] }; // 기본 SOS 번호
 
 const PROBLEM_DATA = [
   {
@@ -37,11 +38,11 @@ const PROBLEM_DATA = [
       title: "🚨 Emergency Numbers",
       numbers: [
         "👮 police: ",
-        sos[countryCode].police,
+        defaultSosNum.police,
         "🚒 fire: ",
-        sos[countryCode].fire,
+        defaultSosNum.fire,
         "🚑 ambulance: ",
-        sos[countryCode].ambulance,
+        defaultSosNum.ambulance,
       ],
     },
     icon: require("../assets/figma_images/problem_icon_emergency.png"),
@@ -101,9 +102,14 @@ function EmergencyNumbersRow({ numbers, onPressNumber }) {
 }
 
 export default function EmergencyScreen() {
+  const [countryCode, setCountryCode] = useState("BH"); // 국가 코드 상태 추가
+  const [problems, setProblems] = useState(PROBLEM_DATA);
+  const [speaking, setSpeaking] = useState("");
+  const [show, setShow] = useState(false);
+
+  const countryRef = useRef(null); // 국가 선택을 위한 ref
   useEffect(() => {
-    // 문제 데이터 - 모든 카드를 그라데이션으로 통일
-    const PROBLEM_DATA = [
+    const data = [
       {
         id: "1",
         title: "Lost Items",
@@ -119,11 +125,13 @@ export default function EmergencyScreen() {
           title: "🚨 Emergency Numbers",
           numbers: [
             "👮 police: ",
-            sos[countryCode].police,
+            sos[countryCode] ? sos[countryCode].police : defaultSosNum.police,
             "🚒 fire: ",
-            sos[countryCode].fire,
+            sos[countryCode] ? sos[countryCode].fire : defaultSosNum.fire,
             "🚑 ambulance: ",
-            sos[countryCode].ambulance,
+            sos[countryCode]
+              ? sos[countryCode].ambulance
+              : defaultSosNum.ambulance,
           ],
         },
         icon: require("../assets/figma_images/problem_icon_emergency.png"),
@@ -144,11 +152,17 @@ export default function EmergencyScreen() {
         expanded: false,
       },
     ];
+    setProblems(data);
+    console.log("data", data);
   }, [countryCode]);
-  const [problems, setProblems] = useState(PROBLEM_DATA);
-  const [speaking, setSpeaking] = useState("");
 
-  const [countryCode, setCountryCode] = useState("BH"); // 국가 코드 상태 추가
+  useEffect(() => {
+    if (countryRef.current) {
+      countryRef.current.setNativeProps({
+        style: { fontFamily: "Outfit", fontSize: 15 },
+      });
+    }
+  }, []); // 입력창 폰트 설정
 
   // 전화 걸기 함수
   const callNumber = (num) => {
@@ -191,6 +205,10 @@ export default function EmergencyScreen() {
     }
   };
 
+  console.log("Selected country code:", countryCode);
+
+  console.log("SOS numbers:", PROBLEM_DATA[1].description.numbers);
+
   return (
     <LinearGradient
       colors={[
@@ -214,6 +232,57 @@ export default function EmergencyScreen() {
             contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* 국가 선택 버튼 추가 */}
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => setShow(true)}
+                style={styles.countrySelectButton}
+              >
+                <Text
+                  ref={countryRef}
+                  style={{ textAlign: "center", fontSize: 20 }}
+                >
+                  Select Country
+                </Text>
+              </TouchableOpacity>
+
+              <CountryPicker
+                show={show}
+                pickerButtonOnPress={(item) => {
+                  setCountryCode(item.code);
+                  setShow(false);
+                }}
+                onBackdropPress={() => setShow(false)}
+                onRequestClose={() => setShow(false)}
+                style={{
+                  modal: {
+                    height: 500,
+                  },
+                  textInput: {
+                    padding: 10,
+                    fontSize: 16,
+                    color: "#333",
+                    fontFamily: "Outfit",
+                  },
+                  countryName: {
+                    fontSize: 16,
+                    fontFamily: "Outfit",
+                    color: "#000",
+                  },
+                }}
+                fontFamily="Outfit"
+                inputPlaceholder="Select Country"
+                theme={{
+                  fontFamily: "Outfit",
+                }}
+              />
+            </View>
             {problems.map((problem) => (
               <View key={problem.id} style={styles.cardWrapper}>
                 {/* 외부 카드 (헤더 영역) */}
@@ -228,7 +297,7 @@ export default function EmergencyScreen() {
                 >
                   {/* 키워드 영역 */}
                   <View style={styles.headerSection}>
-                    <Text style={styles.cardTitle}>{problem.title}</Text>
+                    <Text style={styles.cardHeaderTitle}>{problem.title}</Text>
                   </View>
                   <View style={styles.innerCard}>
                     {/* 내부 카드 (아이콘 및 해결책) */}
@@ -276,14 +345,14 @@ export default function EmergencyScreen() {
                               👮 police:
                             </Text>
                             <EmergencyNumbersRow
-                              numbers={sos[countryCode].police}
+                              numbers={problem.description.numbers[1]}
                               onPressNumber={callNumber}
                             />
 
                             {/* fire 번호 */}
                             <Text style={styles.cardDescription}>🚒 fire:</Text>
                             <EmergencyNumbersRow
-                              numbers={sos[countryCode].fire}
+                              numbers={problem.description.numbers[3]}
                               onPressNumber={callNumber}
                             />
 
@@ -292,7 +361,7 @@ export default function EmergencyScreen() {
                               🚑 ambulance:
                             </Text>
                             <EmergencyNumbersRow
-                              numbers={sos[countryCode].ambulance}
+                              numbers={problem.description.numbers[5]}
                               onPressNumber={callNumber}
                             />
                           </View>
@@ -474,7 +543,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   expandIcon: {},
-  cardTitle: {
+  cardHeaderTitle: {
     fontFamily: "OriginalSurfer",
     fontSize: 26,
     color: FIGMA_COLORS.white,
@@ -519,5 +588,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginBottom: 8,
+  },
+  countrySelectButton: {
+    width: CARD_WIDTH * 0.83,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#F5F7FE",
+    fontFamily: "Outfit",
+    fontSize: 20,
+    marginBottom: 20,
   },
 });

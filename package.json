@@ -31,6 +31,7 @@
     "react": "19.0.0",
     "react-native": "0.79.2",
     "react-native-calendars": "^1.1312.0",
+    "react-native-country-codes-picker": "^2.3.5",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-global-props": "^1.1.5",
