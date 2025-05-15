@@ -1,184 +1,333 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Image,
     Dimensions,
-    SafeAreaView,
-    Alert
+    StatusBar,
+    TouchableOpacity,
+    FlatList,
+    SafeAreaView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
+// 온보딩 데이터
+const onboardingData = [
+    {
+        id: '1',
+        title: 'Explore the App',
+        image: require('../assets/onboarding/image 33.png'),
+    },
+    {
+        id: '2',
+        title: 'Chat with Trabuddy',
+        image: require('../assets/onboarding/image 34.png'),
+    },
+    {
+        id: '3',
+        title: 'Discover History & Culture',
+        image: require('../assets/onboarding/image 35.png'),
+    },
+    {
+        id: '4',
+        title: 'Personalized Recommendations',
+        image: require('../assets/onboarding/image 36.png'),
+    },
+    {
+        id: '5',
+        image: require('../assets/splash/grandparents.png'),
+        title: 'Welcome to Trabuddy,',
+        description: 'your smart travel companion \nthat enhances the quality of \nyour journey.\nAre you ready to enjoy \nyour travels with Trabuddy?',
+        isFinalPage: true
+    }
+];
+
 export default function OnboardingScreen({ navigation }) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const flatListRef = useRef(null);
+
+    // 다음 슬라이드로 이동
+    const goToNextSlide = () => {
+        if (currentIndex < onboardingData.length - 1) {
+            flatListRef.current.scrollToIndex({
+                index: currentIndex + 1,
+                animated: true
+            });
+        }
+    };
+
+    // 이전 슬라이드로 이동
+    const goToPrevSlide = () => {
+        if (currentIndex > 0) {
+            flatListRef.current.scrollToIndex({
+                index: currentIndex - 1,
+                animated: true
+            });
+        }
+    };
+
+    // 온보딩 완료 및 메인 화면으로 이동
     const finishOnboarding = async () => {
         try {
-            // 온보딩 완료 상태를 저장
-            await AsyncStorage.setItem('has_seen_onboarding', 'true');
+            // 개발 중에는 온보딩 완료 상태를 저장하지 않음
+            // 실제 앱 출시 시 아래 주석을 해제하면 됩니다.
+            // await AsyncStorage.setItem('has_seen_onboarding', 'true');
 
-            // 메인 화면으로 이동 (back 버튼으로 온보딩 화면으로 돌아오지 않도록 replace 사용)
+            // 메인 화면으로 이동
             navigation.replace('Main');
 
-            console.log('온보딩 완료 및 메인 화면으로 이동');
+            console.log('온보딩 확인 완료 및 메인 화면으로 이동 (개발 모드: 온보딩 상태 저장 안함)');
         } catch (error) {
             console.error('온보딩 상태 저장 오류:', error);
-            Alert.alert(
-                '오류',
-                '설정을 저장하는 중 문제가 발생했습니다. 앱을 다시 시작해주세요.',
-                [{
-                    text: '확인',
-                    onPress: () => navigation.navigate('Main')
-                }]
+            // 오류가 발생해도 메인 화면으로 이동
+            navigation.navigate('Main');
+        }
+    };
+
+    // 스크롤 이벤트 처리
+    const handleViewableItemsChanged = useRef(({ viewableItems }) => {
+        if (viewableItems.length > 0) {
+            setCurrentIndex(viewableItems[0].index);
+        }
+    }).current;
+
+    // 온보딩 슬라이드 렌더링
+    const renderItem = ({ item, index }) => {
+        if (item.isFinalPage) {
+            // 마지막 페이지 (시작 버튼이 있는 페이지) - 설명 유지
+            return (
+                <View style={styles.slide}>
+                    <LinearGradient
+                        colors={['#D4F9FA', '#B2E4FF']}
+                        style={styles.gradientBackground}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 1 }}
+                    >
+                        <Image
+                            source={item.image}
+                            style={styles.finalImage}
+                            resizeMode="contain"
+                        />
+                        <View style={styles.finalTextContainer}>
+                            <Text style={styles.finalTitle}>{item.title}</Text>
+                            <Text style={styles.finalDescription}>{item.description}</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.startButton}
+                            onPress={finishOnboarding}
+                        >
+                            <Text style={styles.startButtonText}>Start Now!</Text>
+                        </TouchableOpacity>
+                    </LinearGradient>
+                </View>
             );
         }
+
+        // 다른 온보딩 페이지들 - 제목만 표시
+        return (
+            <View style={styles.slide}>
+                <LinearGradient
+                    colors={['#D4F9FA', '#B2E4FF']}
+                    style={styles.gradientBackground}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                >
+                    <View style={styles.contentContainer}>
+                        <View style={styles.imageContainer}>
+                            <Image
+                                source={item.image}
+                                style={styles.screenImage}
+                                resizeMode="contain"
+                            />
+                        </View>
+                        <View style={styles.textContainer}>
+                            <Text style={styles.slideTitle}>{item.title}</Text>
+                        </View>
+                    </View>
+                </LinearGradient>
+            </View>
+        );
+    };
+
+    // 페이지 인디케이터 렌더링
+    const renderPagination = () => {
+        return (
+            <View style={styles.paginationContainer}>
+                {onboardingData.map((_, index) => (
+                    <View
+                        key={index}
+                        style={[
+                            styles.paginationDot,
+                            index === currentIndex ? styles.paginationDotActive : null
+                        ]}
+                    />
+                ))}
+            </View>
+        );
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <LinearGradient
-                colors={['#1A237E', '#311B92']}
-                style={styles.background}
-            >
-                <View style={styles.content}>
-                    <Image
-                        source={require('../assets/icon.png')}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
+            <StatusBar translucent backgroundColor="transparent" />
 
-                    <Text style={styles.title}>Trabuddy에 오신 것을 환영합니다!</Text>
-                    <Text style={styles.subtitle}>
-                        여행 준비부터 도착까지, 당신의 여행 친구가 되어드립니다
-                    </Text>
+            <FlatList
+                ref={flatListRef}
+                data={onboardingData}
+                renderItem={renderItem}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                pagingEnabled
+                bounces={false}
+                keyExtractor={item => item.id}
+                onViewableItemsChanged={handleViewableItemsChanged}
+                viewabilityConfig={{
+                    itemVisiblePercentThreshold: 50
+                }}
+            />
 
-                    <View style={styles.featureContainer}>
-                        <FeatureItem
-                            title="여행 정보 제공"
-                            description="목적지의 문화, 역사, 관광지 정보를 제공합니다"
-                        />
-                        <FeatureItem
-                            title="여행 준비물 추천"
-                            description="당신의 여행에 필요한 준비물을 추천해 드립니다"
-                        />
-                        <FeatureItem
-                            title="맞춤형 여행 도우미"
-                            description="AI 기반 개인 맞춤형 여행 정보를 제공합니다"
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={finishOnboarding}
-                    >
-                        <Text style={styles.buttonText}>시작하기</Text>
-                    </TouchableOpacity>
-                </View>
-            </LinearGradient>
+            {renderPagination()}
         </SafeAreaView>
     );
 }
 
-const FeatureItem = ({ title, description }) => (
-    <View style={styles.featureItem}>
-        <View style={styles.featureIcon}>
-            <Text style={styles.featureIconText}>✓</Text>
-        </View>
-        <View style={styles.featureTextContainer}>
-            <Text style={styles.featureTitle}>{title}</Text>
-            <Text style={styles.featureDescription}>{description}</Text>
-        </View>
-    </View>
-);
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#fff',
     },
-    background: {
-        flex: 1,
+    slide: {
+        width,
+        height,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
     },
-    content: {
+    gradientBackground: {
+        width,
+        height,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        paddingHorizontal: 20,
+    },
+    contentContainer: {
         flex: 1,
+        width: width,
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20,
+        paddingTop: 20,
     },
-    logo: {
-        width: width * 0.4,
-        height: width * 0.4,
-        marginBottom: 30,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: 'white',
-        textAlign: 'center',
-        marginBottom: 10,
-        fontFamily: 'Outfit',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.8)',
-        textAlign: 'center',
-        marginBottom: 40,
-        fontFamily: 'Outfit',
-    },
-    featureContainer: {
-        width: '100%',
-        marginBottom: 40,
-    },
-    featureItem: {
-        flexDirection: 'row',
+    imageContainer: {
+        width: width,
+        height: height * 0.7,
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    screenImage: {
+        width: width,
+        height: height * 0.7,
+        resizeMode: 'contain',
         marginBottom: 20,
     },
-    featureIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    textContainer: {
         alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 15,
+        paddingHorizontal: 20,
+        marginTop: 0,
+        height: 80,
     },
-    featureIconText: {
+    slideTitle: {
+        fontFamily: 'Outfit',
+        fontSize: 28,
+        fontWeight: '600',
+        color: '#333',
+        textAlign: 'center',
+        marginBottom: 10,
+        marginTop: 30,
+    },
+    finalImage: {
+        width: width * 0.6,
+        height: height * 0.3,
+        marginTop: -30,
+    },
+    finalTextContainer: {
+        marginTop: 20,
+        alignItems: 'center',
+        paddingHorizontal: 10,
+    },
+    finalTitle: {
+        fontFamily: 'Outfit',
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#8C8C8C',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    finalDescription: {
+        fontFamily: 'Outfit',
         fontSize: 20,
-        color: 'white',
+        fontWeight: '600',
+        color: '#8C8C8C',
+        textAlign: 'center',
+        lineHeight: 30,
     },
-    featureTextContainer: {
-        flex: 1,
-    },
-    featureTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 5,
-        fontFamily: 'Outfit',
-    },
-    featureDescription: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.8)',
-        fontFamily: 'Outfit',
-    },
-    button: {
-        backgroundColor: 'white',
+    startButton: {
+        backgroundColor: '#E9FEFF',
         paddingVertical: 15,
         paddingHorizontal: 60,
-        borderRadius: 30,
+        borderRadius: 40,
+        marginTop: 40,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
         elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
     },
-    buttonText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#1A237E',
+    startButtonText: {
         fontFamily: 'Outfit',
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#515151',
+        textAlign: 'center',
+    },
+    paginationContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 100,
+        width: '100%',
+        backgroundColor: 'transparent',
+    },
+    paginationDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: 'rgba(22, 159, 232, 0.3)',
+        marginHorizontal: 8,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 0,
+        },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        elevation: 0,
+        overflow: 'hidden',
+    },
+    paginationDotActive: {
+        backgroundColor: 'rgba(22, 159, 232, 0.8)',
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        borderWidth: 0,
+        borderColor: 'transparent',
     },
 }); 
