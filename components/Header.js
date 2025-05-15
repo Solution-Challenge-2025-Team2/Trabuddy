@@ -21,6 +21,16 @@ export default function Header({ AppName }) {
     }, 50); // 50ms 지연
   };
 
+  // 메인 화면으로 이동하는 함수
+  const navigateToMain = () => {
+    Keyboard.dismiss(); // 키보드 내리기
+
+    // 키보드가 내려간 후 네비게이션 실행
+    setTimeout(() => {
+      navigation.navigate("Main");
+    }, 50); // 50ms 지연
+  };
+
   return (
     <View
       style={[styles.header, route.name === "Sidebar" && styles.sidebarBorder]}
@@ -28,7 +38,9 @@ export default function Header({ AppName }) {
       <TouchableOpacity onPress={handleNavigation}>
         <Text style={styles.sidebarButton}>☰</Text> {/* 아이콘 바꾸어야 함 */}
       </TouchableOpacity>
-      <Text style={styles.title}>{AppName}</Text>
+      <TouchableOpacity onPress={navigateToMain} style={styles.titleContainer}>
+        <Text style={styles.title}>{AppName}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -48,10 +60,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#D1D1D1",
   },
+  titleContainer: {
+    flex: 0.9,
+  },
   title: {
     fontSize: 32,
     fontFamily: "OriginalSurfer",
     textAlign: "center",
-    flex: 0.9,
   },
 });
