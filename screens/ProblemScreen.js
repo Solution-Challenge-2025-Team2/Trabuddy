@@ -185,6 +185,9 @@ export default function EmergencyScreen() {
         language: "en-US",
         rate: 0.9,
         pitch: 1.0,
+        onDone: () => {
+          setSpeaking(""); // TTS가 끝나면 speaking 상태 초기화
+        },
       });
       setSpeaking(text); // 현재 읽고 있는 텍스트 저장
     }
