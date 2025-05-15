@@ -52,7 +52,7 @@ export default function MainScreen() {
     setIsLoggedIn,
   } = useChat(); // Get functions and state from context
   const scrollViewRef = useRef(null);
-  const [isSpeaking, setIsSpeaking] = useState(false); // TTS running state
+  const [speaking, setSpeaking] = useState(""); // TTS running state (변경됨: isSpeaking → speaking)
 
   // 컴포넌트 마운트 시 로그인 상태 확인 및 업데이트
   useEffect(() => {
@@ -104,18 +104,6 @@ export default function MainScreen() {
     }
   }, [messages]);
 
-  // Function to check if TTS is running
-  useEffect(() => {
-    const checkSpeechStatus = async () => {
-      const speaking = await Speech.isSpeakingAsync();
-      setIsSpeaking(speaking);
-    };
-
-    // Check status every 500ms
-    const interval = setInterval(checkSpeechStatus, 500);
-    return () => clearInterval(interval);
-  }, []);
-
   // Function to dismiss keyboard when navigating
   const navigateAndDismissKeyboard = (screenName) => {
     Keyboard.dismiss(); // Dismiss keyboard
@@ -133,24 +121,21 @@ export default function MainScreen() {
     addMessage("Ask me anything you're curious about", false);
   };
 
-  // TTS function: convert text to speech
+  // TTS function: convert text to speech (전체 교체)
   const speakText = (text) => {
-    if (isSpeaking) {
-      // Stop if already speaking
+    if (speaking === text) {
+      // 이미 같은 텍스트를 읽고 있다면 중지
       Speech.stop();
-      setIsSpeaking(false);
+      setSpeaking("");
     } else {
-      // Start reading new text
-      setIsSpeaking(true);
-
+      // 다른 텍스트를 읽을 경우
+      Speech.stop(); // 현재 읽고 있는 텍스트 중지
       Speech.speak(text, {
         language: "en-US",
         rate: 0.9,
         pitch: 1.0,
-        onDone: () => setIsSpeaking(false), // Update state when complete
-        onStopped: () => setIsSpeaking(false), // Update state when stopped
-        onError: () => setIsSpeaking(false), // Update state on error
       });
+      setSpeaking(text); // 현재 읽고 있는 텍스트 저장
     }
   };
 
@@ -283,9 +268,9 @@ export default function MainScreen() {
                   onPress={() => speakText(messageText)}
                 >
                   <Ionicons
-                    name={isSpeaking ? "volume-mute" : "volume-high"}
+                    name={speaking === messageText ? "stop" : "volume-high"}
                     size={16}
-                    color={isSpeaking ? "#F44336" : COLORS.primary}
+                    color={COLORS.primary}
                   />
                 </TouchableOpacity>
               </View>
