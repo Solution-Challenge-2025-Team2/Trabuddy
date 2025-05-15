@@ -22,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Frame from "../Frame";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from "expo-speech";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.85;
@@ -125,6 +126,7 @@ export default function HistoryDetailScreen({ navigation, route }) {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [speaking, setSpeaking] = useState(""); // TTS 상태 관리를 위한 상태 추가
 
   // 역사/문화 데이터 존재 여부 상태
   const [savedHistoricalExist, setSavedHistoricalExist] = useState(false);
@@ -570,6 +572,24 @@ export default function HistoryDetailScreen({ navigation, route }) {
     return null;
   };
 
+  // TTS 기능 추가
+  const speak = (text) => {
+    if (speaking === text) {
+      // 이미 같은 텍스트를 읽고 있다면 중지
+      Speech.stop();
+      setSpeaking("");
+    } else {
+      // 다른 텍스트 읽고 있다면
+      Speech.stop(); // 현재 읽고 있는 텍스트 중지
+      Speech.speak(text, {
+        language: "en-US",
+        rate: 0.9,
+        pitch: 1.0,
+      });
+      setSpeaking(text); // 현재 읽고 있는 텍스트 저장
+    }
+  };
+
   return (
     <LinearGradient
       colors={[
@@ -834,9 +854,21 @@ export default function HistoryDetailScreen({ navigation, route }) {
                             <Ionicons name="information-circle" size={24} color="#40ABE5" />
                             <Text style={styles.sectionTitle}>Period Description</Text>
                           </View>
-                          <Text style={styles.sectionText}>
-                            {getPeriodData(selectedPeriod, '시대_설명') || "이 시대에 대한 설명이 없습니다."}
-                          </Text>
+                          <View style={styles.descriptionContainer}>
+                            <Text style={styles.sectionText}>
+                              {getPeriodData(selectedPeriod, '시대_설명') || "이 시대에 대한 설명이 없습니다."}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => speak(getPeriodData(selectedPeriod, '시대_설명') || "이 시대에 대한 설명이 없습니다.")}
+                              style={styles.ttsButton}
+                            >
+                              <Ionicons
+                                name={speaking === (getPeriodData(selectedPeriod, '시대_설명') || "이 시대에 대한 설명이 없습니다.") ? "stop" : "volume-high"}
+                                size={16}
+                                color="#40ABE5"
+                              />
+                            </TouchableOpacity>
+                          </View>
                         </View>
 
                         {/* 주요 사건 - 데이터 있는 경우만 표시 */}
@@ -851,21 +883,38 @@ export default function HistoryDetailScreen({ navigation, route }) {
                               <FlatList
                                 data={events}
                                 keyExtractor={(item, index) => `event_${index}`}
-                                renderItem={({ item, index }) => (
-                                  <View style={styles.eventItem}>
-                                    <View style={styles.eventNumberContainer}>
-                                      <Text style={styles.eventNumber}>{index + 1}</Text>
+                                renderItem={({ item, index }) => {
+                                  const title = getItemField(item, '이름') || `사건 ${index + 1}`;
+                                  const description = getItemField(item, '설명') || "설명 정보가 없습니다.";
+                                  const fullText = `${title}. ${description}`;
+                                  return (
+                                    <View style={styles.eventItem}>
+                                      <View style={styles.eventNumberContainer}>
+                                        <Text style={styles.eventNumber}>{index + 1}</Text>
+                                      </View>
+                                      <View style={styles.eventContent}>
+                                        <Text style={styles.eventTitle}>
+                                          {title}
+                                        </Text>
+                                        <View style={styles.eventDescriptionContainer}>
+                                          <Text style={styles.eventDescription}>
+                                            {description}
+                                          </Text>
+                                          <TouchableOpacity
+                                            onPress={() => speak(fullText)}
+                                            style={styles.ttsButton}
+                                          >
+                                            <Ionicons
+                                              name={speaking === fullText ? "stop" : "volume-high"}
+                                              size={16}
+                                              color="#40ABE5"
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
                                     </View>
-                                    <View style={styles.eventContent}>
-                                      <Text style={styles.eventTitle}>
-                                        {getItemField(item, '이름') || `사건 ${index + 1}`}
-                                      </Text>
-                                      <Text style={styles.eventDescription}>
-                                        {getItemField(item, '설명') || "설명 정보가 없습니다."}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                )}
+                                  );
+                                }}
                                 scrollEnabled={false}
                                 ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
                               />
@@ -1245,6 +1294,10 @@ const styles = StyleSheet.create({
     color: FIGMA_COLORS.primaryText,
     marginBottom: 5,
   },
+  eventDescriptionContainer: {
+    width: '100%',
+    flexDirection: 'column',
+  },
   eventDescription: {
     fontFamily: 'Outfit',
     fontSize: 15,
@@ -1380,5 +1433,28 @@ const styles = StyleSheet.create({
     color: FIGMA_COLORS.secondaryText,
     textAlign: 'center',
     marginBottom: 20,
+  },
+  descriptionContainer: {
+    width: '100%',
+    flexDirection: 'column',
+  },
+  eventDescriptionContainer: {
+    width: '100%',
+    flexDirection: 'column',
+  },
+  // TTS 버튼 스타일
+  ttsButton: {
+    padding: 6,
+    borderRadius: 15,
+    backgroundColor: "#E3F2FD",
+    marginLeft: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#BBDEFB",
+    alignSelf: "flex-end",
+    width: 32,
+    height: 32,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
