@@ -1,6 +1,6 @@
 # Trabuddy
 
-![Trabuddy Logo](./assets/Logo.png)
+<img src="./assets/Logo.png" alt="Trabuddy Logo" width="300"/>
 
 ## 📱 Project Overview
 
