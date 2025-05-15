@@ -1095,7 +1095,7 @@ export default function MainScreen() {
                     color="#40ABE5"
                     style={styles.loadingIndicator}
                   />
-                  <Text style={styles.loadingText}>답변 작성 중...</Text>
+                  <Text style={styles.loadingText}>Generating Response...</Text>
                 </View>
               </View>
             )}
