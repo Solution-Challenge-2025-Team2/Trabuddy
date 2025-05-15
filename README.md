@@ -1,6 +1,6 @@
 # Trabuddy
 
-![Trabuddy Logo](./assets/@Logo.png)
+![Trabuddy Logo](./assets/Logo.png)
 
 ## 📱 Project Overview
 
