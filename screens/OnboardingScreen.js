@@ -74,14 +74,13 @@ export default function OnboardingScreen({ navigation }) {
     // 온보딩 완료 및 메인 화면으로 이동
     const finishOnboarding = async () => {
         try {
-            // 개발 중에는 온보딩 완료 상태를 저장하지 않음
-            // 실제 앱 출시 시 아래 주석을 해제하면 됩니다.
-            // await AsyncStorage.setItem('has_seen_onboarding', 'true');
+            // 온보딩 완료 상태 저장
+            await AsyncStorage.setItem('has_seen_onboarding', 'true');
 
             // 메인 화면으로 이동
             navigation.replace('Main');
 
-            console.log('온보딩 확인 완료 및 메인 화면으로 이동 (개발 모드: 온보딩 상태 저장 안함)');
+            console.log('온보딩 확인 완료 및 메인 화면으로 이동');
         } catch (error) {
             console.error('온보딩 상태 저장 오류:', error);
             // 오류가 발생해도 메인 화면으로 이동
