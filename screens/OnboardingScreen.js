@@ -250,9 +250,9 @@ const styles = StyleSheet.create({
         marginTop: 30,
     },
     finalImage: {
-        width: width * 0.6,
-        height: height * 0.3,
-        marginTop: -30,
+        width: width * 0.4,
+        height: height * 0.22,
+        marginTop: -20,
     },
     finalTextContainer: {
         marginTop: 20,

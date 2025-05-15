@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Frame from "../Frame";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { problemDescriptions } from "../data/ProblemDescriptions";
 import * as Speech from "expo-speech";
 import sos from "../data/SosNum.json";
@@ -442,11 +442,11 @@ export default function EmergencyScreen() {
                                     </Text>
                                     <TouchableOpacity
                                       onPress={() => speak(step)}
-                                      style={{ alignSelf: 'flex-end' }}
+                                      style={styles.ttsButton}
                                     >
-                                      <MaterialIcons
-                                        name="volume-up"
-                                        size={20}
+                                      <Ionicons
+                                        name={speaking === step ? "stop" : "volume-high"}
+                                        size={16}
                                         color="#40ABE5"
                                       />
                                     </TouchableOpacity>
@@ -462,11 +462,11 @@ export default function EmergencyScreen() {
                                     </Text>
                                     <TouchableOpacity
                                       onPress={() => speak(tip)}
-                                      style={{ alignSelf: 'flex-end' }}
+                                      style={styles.ttsButton}
                                     >
-                                      <MaterialIcons
-                                        name="volume-up"
-                                        size={20}
+                                      <Ionicons
+                                        name={speaking === tip ? "stop" : "volume-high"}
+                                        size={16}
                                         color="#40ABE5"
                                       />
                                     </TouchableOpacity>
@@ -497,11 +497,11 @@ export default function EmergencyScreen() {
                                     </Text>
                                     <TouchableOpacity
                                       onPress={() => speak(info)}
-                                      style={{ alignSelf: 'flex-end' }}
+                                      style={styles.ttsButton}
                                     >
-                                      <MaterialIcons
-                                        name="volume-up"
-                                        size={20}
+                                      <Ionicons
+                                        name={speaking === info ? "stop" : "volume-high"}
+                                        size={16}
                                         color="#40ABE5"
                                       />
                                     </TouchableOpacity>
@@ -517,11 +517,11 @@ export default function EmergencyScreen() {
                                     </Text>
                                     <TouchableOpacity
                                       onPress={() => speak(step)}
-                                      style={{ alignSelf: 'flex-end' }}
+                                      style={styles.ttsButton}
                                     >
-                                      <MaterialIcons
-                                        name="volume-up"
-                                        size={20}
+                                      <Ionicons
+                                        name={speaking === step ? "stop" : "volume-high"}
+                                        size={16}
                                         color="#40ABE5"
                                       />
                                     </TouchableOpacity>
@@ -688,5 +688,15 @@ const styles = StyleSheet.create({
   },
   problemGroup: {
     marginBottom: 15,
+  },
+  // TTS 버튼 스타일
+  ttsButton: {
+    padding: 6,
+    borderRadius: 15,
+    backgroundColor: "#E3F2FD",
+    marginLeft: 8,
+    alignSelf: "flex-end",
+    borderWidth: 1,
+    borderColor: "#BBDEFB",
   },
 });
