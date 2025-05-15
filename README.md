@@ -62,10 +62,8 @@ yarn start
 
 ## 👥 Team
 
-- Member 1 - Role
-- Member 2 - Role
-- Member 3 - Role
-- Member 4 - Role
+- Myeongha Kim - UI/UX Design & Frontend Development 
+- Minjae Kim - UI/UX Design & Frontend Development
 
 ## 📄 License
 
