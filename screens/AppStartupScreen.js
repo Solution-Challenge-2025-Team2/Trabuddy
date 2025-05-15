@@ -11,14 +11,9 @@ export default function AppStartupScreen({ navigation }) {
     // 온보딩 상태 확인 함수
     const checkOnboardingStatus = async () => {
         try {
-            // 개발 모드에서는 항상 온보딩 페이지 확인을 위해 온보딩으로 이동
-            // 실제 앱 출시 시 이 부분을 원래대로 되돌리면 됩니다.
-            navigation.replace('Onboarding');
-
-            // 원래 코드 (주석 처리)
-            /*
+            // 온보딩 상태 확인
             const hasSeenOnboarding = await AsyncStorage.getItem('has_seen_onboarding');
-            
+
             if (hasSeenOnboarding === 'true') {
                 // 온보딩을 이미 봤으면 메인 화면으로 이동
                 navigation.replace('Main');
@@ -26,7 +21,6 @@ export default function AppStartupScreen({ navigation }) {
                 // 온보딩을 아직 안 봤으면 온보딩 화면으로 이동
                 navigation.replace('Onboarding');
             }
-            */
         } catch (error) {
             console.error('앱 시작 상태 확인 오류:', error);
             // 오류 발생 시 메인 화면으로 이동
