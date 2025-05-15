@@ -242,7 +242,7 @@ export default function MainScreen() {
           <View style={styles.botMessageContainer}>
             <View style={styles.botProfileContainer}>
               <Image
-                source={require("../assets/figma_images/trabuddy_face.png")}
+                source={require("../assets/Logo.png")}
                 style={styles.botProfileImage}
               />
             </View>
@@ -923,7 +923,7 @@ export default function MainScreen() {
               end={{ x: 1, y: 1 }}
             >
               <Image
-                source={require("../assets/figma_images/trabuddy_face.png")}
+                source={require("../assets/Logo.png")}
                 style={styles.profileImage}
               />
             </LinearGradient>
@@ -1082,7 +1082,7 @@ export default function MainScreen() {
               <View style={styles.loadingContainer}>
                 <View style={styles.botProfileContainer}>
                   <Image
-                    source={require("../assets/figma_images/trabuddy_face.png")}
+                    source={require("../assets/Logo.png")}
                     style={styles.botProfileImage}
                   />
                 </View>

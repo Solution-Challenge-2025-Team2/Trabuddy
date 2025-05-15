@@ -67,7 +67,7 @@ export default function SplashScreen({ navigation }) {
                 <View style={styles.content}>
                     <View style={styles.imageContainer}>
                         <Image
-                            source={require('../assets/splash/grandparents.png')}
+                            source={require('../assets/Logo With Trabuddy.png')}
                             style={styles.image}
                             resizeMode="contain"
                         />

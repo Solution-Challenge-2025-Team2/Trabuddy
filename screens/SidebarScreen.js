@@ -260,7 +260,7 @@ const Sidebar = ({ navigation }) => {
       <View style={styles.userInfoContainer}>
         <View style={styles.profileImagePlaceholder}>
           <Image
-            source={require("../assets/figma_images/trabuddy_face.png")}
+            source={require("../assets/Logo.png")}
             style={styles.profileImage}
           />
         </View>
