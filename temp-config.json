@@ -1,0 +1,1 @@
+{ "expo": { "doctor": { "reactNativeDirectoryCheck": { "exclude": ["react-native-country-codes-picker", "react-native-fs", "@react-native-community/masked-view", "eas-cli", "expo-permissions", "react-native-global-props", "sos"] } } } }

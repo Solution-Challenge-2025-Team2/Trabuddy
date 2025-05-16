@@ -120,32 +120,10 @@ const FIGMA_COLORS = {
   iconBackground: "#6DC0ED",
 };
 
-// 추천 여행지 데이터
-// const RECOMMENDED_PLACES = [
-//   {
-//     id: "1",
-//     title: "Uyuni Salt Desert",
-//     subInfo: "additional info",
-//     image: require("../assets/figma_images/image_15_143_73.png"),
-//   },
-//   {
-//     id: "2",
-//     title: "Gyeongbokgound",
-//     subInfo: "historical palace",
-//     image: require("../assets/figma_images/image_16_143_67.png"),
-//   },
-//   {
-//     id: "3",
-//     title: "Jeju Island",
-//     subInfo: "volcanic island",
-//     image: { uri: "https://placehold.co/280x210/jeju/island" },
-//   },
-// ];
-
 export default function PrepareScreen({ navigation, route }) {
   const [startDate, setStartDate] = useState("2025-05-01");
   const [endDate, setEndDate] = useState("2025-05-10");
-  const [destination, setDestination] = useState("Jeju Island");
+  const [destination, setDestination] = useState("Korea");
   const [modalVisible, setModalVisible] = useState(false);
   const [calendarModalVisible, setCalendarModalVisible] = useState(false);
   const [tempDestination, setTempDestination] = useState("");

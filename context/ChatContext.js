@@ -594,7 +594,7 @@ export const ChatProvider = ({ children }) => {
                 console.log('clearChatOnly - 채팅 내역 불러오는 중...');
 
                 // API 호출하여 채팅 내역 가져오기
-                const response = await fetch(`http://3.106.58.224:3000/chat/session/${sessionId}/history`, {
+                const response = await fetch(`https://api.trabuddy.shop/chat/session/${sessionId}/history`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

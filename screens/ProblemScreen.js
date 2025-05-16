@@ -20,7 +20,7 @@ import { CountryPicker } from "react-native-country-codes-picker";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_WIDTH * 0.95;
-const countryCode = "BH"; // 국가 코드 (예: "KR" 또는 "US")
+const countryCode = "KR"; // 국가 코드 (예: "KR" 또는 "US")
 
 const PROBLEM_DATA = [
   {
@@ -149,7 +149,7 @@ export default function EmergencyScreen() {
   const [problems, setProblems] = useState(PROBLEM_DATA);
   const [speaking, setSpeaking] = useState("");
 
-  const [countryCode, setCountryCode] = useState("BH"); // ISO 코드
+  const [countryCode, setCountryCode] = useState("KR"); // ISO 코드
   const [countryName, setCountryName] = useState("Select Country"); // 버튼에 표시할 나라 이름
   const [show, setShow] = useState(false);
   const [countryFlag, setCountryFlag] = useState("🌐");

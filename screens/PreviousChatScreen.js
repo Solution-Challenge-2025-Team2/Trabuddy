@@ -41,7 +41,7 @@ const ChatHistoryScreen = ({ visible, sessionId, onClose }) => {
                 return;
             }
 
-            const response = await fetch(`http://3.106.58.224:3000/chat/session/${sessionId}/history`, {
+            const response = await fetch(`https://api.trabuddy.shop/chat/session/${sessionId}/history`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -197,7 +197,7 @@ export default function PreviousChatScreen() {
             }
 
             // API 요청
-            const response = await fetch('http://3.106.58.224:3000/chat/sessions', {
+            const response = await fetch('https://api.trabuddy.shop/chat/sessions', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -278,7 +278,7 @@ export default function PreviousChatScreen() {
             }
 
             // API request
-            const response = await fetch(`http://3.106.58.224:3000/chat/session/${sessionId}`, {
+            const response = await fetch(`https://api.trabuddy.shop/chat/session/${sessionId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,

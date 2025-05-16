@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://3.106.58.224:3000';
+const API_URL = 'https://api.trabuddy.shop';
 
 // Network request logging helper function
 const logNetworkRequest = async (url, method, headers, body) => {

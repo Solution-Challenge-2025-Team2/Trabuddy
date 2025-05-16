@@ -91,7 +91,7 @@ export default function Footer() {
             console.log("📦 Base64 (앞부분):", base64.slice(0, 100) + "...");
             // 서버에 전송
             const response = await fetch(
-              `http://3.106.58.224:3000/speech/transcribe`,
+              `https://api.trabuddy.shop/speech/transcribe`,
               {
                 method: "POST",
                 headers: {
@@ -123,7 +123,7 @@ export default function Footer() {
         console.log("📦 Base64 (앞부분):", base64.slice(0, 100) + "...");
         // server에 전송
         const response = await fetch(
-          `http://3.106.58.224:3000/speech/transcribe`,
+          `https://api.trabuddy.shop/speech/transcribe`,
           {
             method: "POST",
             headers: {
