@@ -4,7 +4,7 @@
     "slug": "Trabuddy",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/@Logo With Trabuddy.png",
+    "icon": "./assets/Logo_With_Trabuddy.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
