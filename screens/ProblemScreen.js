@@ -285,6 +285,7 @@ export default function EmergencyScreen() {
               {/* 국가 선택 버튼 추가 */}
               <View
                 style={{
+                  width: "100%",
                   flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
@@ -731,5 +732,14 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     borderWidth: 1,
     borderColor: "#BBDEFB",
+  },
+  countrySelectButton: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+    padding: 10,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
   },
 });
