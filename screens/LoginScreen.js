@@ -41,7 +41,9 @@ export default function LoginScreen({ navigation }) {
       try {
         const token = await AsyncStorage.getItem("access_token");
         if (token) {
-          console.log("이미 로그인된 사용자가 로그인 페이지에 접근 시도, 메인으로 리디렉션");
+          console.log(
+            "이미 로그인된 사용자가 로그인 페이지에 접근 시도, 메인으로 리디렉션"
+          );
           navigation.replace("Main");
         }
       } catch (error) {
@@ -88,7 +90,7 @@ export default function LoginScreen({ navigation }) {
         "historical_culture_data",
         "historical_data_exists",
         "historical_data_timestamp",
-        "latest_historical_data_key"
+        "latest_historical_data_key",
       ];
 
       // 필수 키 삭제
@@ -136,7 +138,7 @@ export default function LoginScreen({ navigation }) {
     setIdCheckMessage("");
     try {
       const response = await fetch(
-        "http://3.106.58.224:3000/auth/checkduplicate",
+        "https://api.trabuddy.shop/auth/checkduplicate",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -148,7 +150,8 @@ export default function LoginScreen({ navigation }) {
         setIdCheckMessage("Available ID");
         setIsIdAvailable(true);
       } else {
-        setIdCheckMessage("Server error. Please try again.");
+        setIdCheckMessage("ID already exists. Choose another one.");
+        console.log(data.message);
         setIsIdAvailable(false);
       }
     } catch (error) {
@@ -174,7 +177,7 @@ export default function LoginScreen({ navigation }) {
     }
     setIsLoading(true);
     try {
-      const response = await fetch("http://3.106.58.224:3000/auth/signup", {
+      const response = await fetch("https://api.trabuddy.shop/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -203,7 +206,7 @@ export default function LoginScreen({ navigation }) {
     try {
       console.log("로그인 시도:", username);
 
-      const response = await fetch("http://3.106.58.224:3000/auth/login", {
+      const response = await fetch("https://api.trabuddy.shop/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -395,6 +398,7 @@ export default function LoginScreen({ navigation }) {
                 <Text style={styles.inputLabel}>Confirm Password</Text>
                 <View style={styles.passwordContainer}>
                   <TextInput
+                    ref={pwdRef}
                     style={styles.passwordInput}
                     placeholder="Confirm your password"
                     value={confirmPassword}
