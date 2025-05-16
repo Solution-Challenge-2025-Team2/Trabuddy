@@ -146,7 +146,7 @@ export default function EmergencyScreen() {
       },
       {
         id: "3",
-        title: "natural disaster",
+        title: "Natural disaster",
         description: problemDescriptions.naturalDisaster,
         icon: require("../assets/figma_images/problem_icon_naturalDisaster.png"),
         expanded: false,
